@@ -1,0 +1,109 @@
+%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#f8fafc", "primaryBorderColor": "#0f172a", "primaryTextColor": "#0f172a", "lineColor": "#2563eb", "secondaryColor": "#dbeafe", "tertiaryColor": "#eff6ff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
+erDiagram
+    %% Identity and session relationships
+    ADMIN_USERS ||--o{ REFRESH_TOKENS : "receives sessions"
+    CLIENT_USERS ||--o{ REFRESH_TOKENS : "receives sessions"
+
+    %% Client and store membership
+    CLIENT_USERS ||--o{ CLIENT_STORE_MAPPING : "belongs to stores"
+    STORES ||--o{ CLIENT_STORE_MAPPING : "has members"
+
+    %% Reporting hierarchy
+    STORES ||--o{ DAILY_REPORTS : "owns daily reports"
+    STORES ||--o{ MONTHLY_REPORTS : "owns monthly reports"
+    STORES ||--o{ YEARLY_REPORTS : "owns yearly reports"
+
+    ADMIN_USERS {
+        Long admin_id PK
+        String full_name
+        String email UK
+        String password_hash
+        UserRole role
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    CLIENT_USERS {
+        Long client_id PK
+        String full_name
+        String email UK
+        String password_hash
+        String phone_number
+        String address
+        Status status
+        UserRole role
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    REFRESH_TOKENS {
+        Long id PK
+        String token_hash "SHA-256 hash of raw refresh token"
+        String user_email "admin or client email"
+        String user_role "ADMIN or CLIENT"
+        LocalDateTime expires_at
+        Boolean revoked
+        LocalDateTime created_at
+    }
+
+    STORES {
+        Long store_id PK
+        String store_name
+        String store_code UK
+        String address
+        String contact_number
+        Status status
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    CLIENT_STORE_MAPPING {
+        Long client_id PK, FK
+        Long store_id PK, FK
+        StoreRole role "OWNER or PARTNER"
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    DAILY_REPORTS {
+        Long daily_report_id PK
+        Long store_id FK
+        LocalDate report_date
+        BigDecimal grocery_total
+        BigDecimal volume
+        BigDecimal cash_deposit
+        BigDecimal check_deposit
+        BigDecimal over_short
+        BigDecimal no_sale
+        BigDecimal line_void
+        BigDecimal void_amount
+        BigDecimal refunds
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    MONTHLY_REPORTS {
+        Long monthly_report_id PK
+        Long store_id FK
+        Integer report_month
+        Integer report_year
+        Integer department_id
+        String department_name
+        BigDecimal gross
+        BigDecimal discount
+        BigDecimal promotion
+        BigDecimal refund
+        BigDecimal void_amount
+        BigDecimal net_sales
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    YEARLY_REPORTS {
+        Long yearly_report_id PK
+        Long store_id FK
+        Integer report_year
+        String annual_summary
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }

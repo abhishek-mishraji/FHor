@@ -1,0 +1,15 @@
+.dashboard-page,
+.clients-page,
+.stores-page,
+.store-members-page,
+.daily-reports-page,
+.monthly-reports-page,
+.yearly-reports-page,
+.profile-page {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.dashboard-page__selector .form-field {
+  min-width: 220px;
+}

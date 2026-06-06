@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Instrument+Serif:ital@0;1&display=swap');
+
+:root {
+  --font-sans: 'Space Grotesk', 'Segoe UI', sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --color-ink: #11203b;
+  --color-ink-soft: #53617c;
+  --color-surface: rgba(255, 255, 255, 0.8);
+  --color-surface-strong: #ffffff;
+  --color-surface-accent: #edf4ff;
+  --color-border: rgba(17, 32, 59, 0.12);
+  --color-border-strong: rgba(17, 32, 59, 0.2);
+  --color-primary: #0f766e;
+  --color-primary-strong: #155e75;
+  --color-secondary: #f59e0b;
+  --color-danger: #be123c;
+  --color-success: #15803d;
+  --color-warning: #b45309;
+  --color-info: #2563eb;
+  --color-muted: #64748b;
+  --shadow-soft: 0 22px 60px rgba(15, 23, 42, 0.08);
+  --shadow-tight: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --space-1: 0.5rem;
+  --space-2: 0.75rem;
+  --space-3: 1rem;
+  --space-4: 1.5rem;
+  --space-5: 2rem;
+  --space-6: 3rem;
+}

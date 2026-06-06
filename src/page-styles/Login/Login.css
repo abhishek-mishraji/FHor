@@ -1,0 +1,34 @@
+.login-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 420px);
+  gap: clamp(1.5rem, 4vw, 4rem);
+  align-items: center;
+}
+
+.login-page__hero {
+  display: grid;
+  gap: 1rem;
+}
+
+.login-page__hero h1 {
+  max-width: 12ch;
+}
+
+.login-page__notice {
+  padding: 1rem 1.15rem;
+  border-radius: var(--radius-md);
+  background: rgba(37, 99, 235, 0.1);
+  color: var(--color-info);
+}
+
+.login-page__card {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86)),
+    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 45%);
+}
+
+@media (max-width: 860px) {
+  .login-page {
+    grid-template-columns: 1fr;
+  }
+}
