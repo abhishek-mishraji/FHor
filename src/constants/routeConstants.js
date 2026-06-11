@@ -1,6 +1,8 @@
 import { ROLES } from './roleConstants'
 
 export const ROUTES = {
+  landing: '/',
+  about: '/about',
   login: '/login',
   unauthorized: '/unauthorized',
   appRoot: '/app',

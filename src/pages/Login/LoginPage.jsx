@@ -8,6 +8,7 @@ import { validateLoginForm } from '../../validations/authValidation'
 import Button from '../../components/ui/Button'
 import Card from '../../components/ui/Card'
 import TextInput from '../../components/forms/TextInput'
+import horLogo from '../../assets/hor-logo.png'
 import '../../page-styles/Login/Login.css'
 
 const initialValues = {
@@ -72,8 +73,9 @@ function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-page__hero">
+        <img className="login-page__logo" src={horLogo} alt="Hands Off Retail" />
         <p className="login-page__eyebrow">Enterprise Retail Intelligence</p>
-        <h1>Hands of Retail dashboard for governed store operations.</h1>
+        <h1>The Hands Off Retail dashboard for governed store operations.</h1>
         <p>
           Session access is protected by HttpOnly cookie authentication, automatic refresh, and role-aware
           routing across admin and client workspaces.

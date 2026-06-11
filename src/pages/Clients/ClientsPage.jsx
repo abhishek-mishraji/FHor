@@ -1,4 +1,4 @@
-import { useContext, useMemo, useState } from 'react'
+import { useCallback, useContext, useMemo, useState } from 'react'
 import { AppContext } from '../../context/appContext'
 import PageHeader from '../../components/common/PageHeader'
 import DataTable from '../../components/common/DataTable'
@@ -59,34 +59,6 @@ function ClientsPage() {
     searchFields: ['fullName', 'email', 'phoneNumber', 'address', 'status'],
   })
 
-  const columns = useMemo(
-    () => [
-      { key: 'fullName', header: 'Client' },
-      { key: 'email', header: 'Email' },
-      { key: 'phoneNumber', header: 'Phone', render: (row) => row.phoneNumber || 'N/A' },
-      { key: 'address', header: 'Address', render: (row) => row.address || 'N/A' },
-      { key: 'status', header: 'Status', render: (row) => <StatusBadge value={row.status} /> },
-      {
-        key: 'actions',
-        header: 'Actions',
-        render: (row) => (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation()
-              openEditModal(row)
-            }}
-          >
-            Edit
-          </Button>
-        ),
-      },
-    ],
-    [],
-  )
-
   const openCreateModal = () => {
     setSelectedClient(null)
     setFormValues(initialFormValues)
@@ -121,6 +93,70 @@ function ClientsPage() {
       [name]: value,
     }))
   }
+
+  const handleStatusToggle = useCallback(async (client) => {
+    const nextStatus = client.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
+
+    try {
+      const updatedClient = await clientService.updateClientStatus(client.clientId, nextStatus)
+      setData((currentClients) =>
+        (currentClients || []).map((item) => (item.clientId === updatedClient.clientId ? updatedClient : item)),
+      )
+      notify({
+        type: 'success',
+        title: 'Client updated',
+        message: `${updatedClient.fullName} is now ${updatedClient.status}.`,
+      })
+    } catch (requestError) {
+      const details = handleServiceError(requestError)
+      notify({
+        type: 'error',
+        title: 'Status update failed',
+        message: details.message,
+      })
+    }
+  }, [notify, setData])
+
+  const columns = useMemo(
+    () => [
+      { key: 'fullName', header: 'Client' },
+      { key: 'email', header: 'Email' },
+      { key: 'phoneNumber', header: 'Phone', render: (row) => row.phoneNumber || 'N/A' },
+      { key: 'address', header: 'Address', render: (row) => row.address || 'N/A' },
+      { key: 'status', header: 'Status', render: (row) => <StatusBadge value={row.status} /> },
+      {
+        key: 'actions',
+        header: 'Actions',
+        render: (row) => (
+          <div className="inline-actions">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation()
+                openEditModal(row)
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={(event) => {
+                event.stopPropagation()
+                handleStatusToggle(row)
+              }}
+            >
+              {row.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}
+            </Button>
+          </div>
+        ),
+      },
+    ],
+    [handleStatusToggle],
+  )
 
   const handleSubmit = async (event) => {
     event.preventDefault()

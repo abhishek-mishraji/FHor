@@ -168,10 +168,7 @@ function StoresPage() {
     setSubmitting(true)
 
     try {
-      const payload = {
-        ...formValues,
-        clientId: Number(formValues.clientId),
-      }
+      const payload = { ...formValues }
 
       const savedStore = selectedStore
         ? await storeService.updateStore(selectedStore.storeId, payload)

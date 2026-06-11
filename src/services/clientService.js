@@ -28,6 +28,12 @@ const clientService = {
     return response.data
   },
 
+  async updateClientStatus(clientId, status, options = {}) {
+    const response = await apiClient.patch(clientEndpoints.admin.updateStatus(clientId), { status }, options)
+
+    return response.data
+  },
+
   async getAccessibleStores(options = {}) {
     const response = await apiClient.get(clientEndpoints.client.stores, {
       ...options,

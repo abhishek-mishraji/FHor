@@ -8,6 +8,13 @@
 .login-page__hero {
   display: grid;
   gap: 1rem;
+  justify-items: start;
+}
+
+.login-page__logo {
+  width: min(300px, 70%);
+  height: auto;
+  margin-bottom: 0.5rem;
 }
 
 .login-page__hero h1 {

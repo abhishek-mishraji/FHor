@@ -1,4 +1,4 @@
-%%{init: {"theme": "base", "themeVariables": {"primaryColor": "#f8fafc", "primaryBorderColor": "#0f172a", "primaryTextColor": "#0f172a", "lineColor": "#2563eb", "secondaryColor": "#dbeafe", "tertiaryColor": "#eff6ff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
+%%{init: {"theme": "forest", "themeVariables": {"primaryColor": "#f8fafc", "primaryBorderColor": "#0f172a", "primaryTextColor": "#0f172a", "lineColor": "#2563eb", "secondaryColor": "#dbeafe", "tertiaryColor": "#eff6ff", "fontFamily": "Arial", "fontSize": "14px"}}}%%
 erDiagram
     %% Identity and session relationships
     ADMIN_USERS ||--o{ REFRESH_TOKENS : "receives sessions"
@@ -87,7 +87,7 @@ erDiagram
         Long store_id FK
         Integer report_month
         Integer report_year
-        Integer department_id
+        String department_id
         String department_name
         BigDecimal gross
         BigDecimal discount

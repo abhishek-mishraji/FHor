@@ -6,6 +6,7 @@ const clientEndpoints = {
     list: ADMIN_CLIENT_PREFIX,
     create: ADMIN_CLIENT_PREFIX,
     update: (clientId) => `${ADMIN_CLIENT_PREFIX}/${clientId}`,
+    updateStatus: (clientId) => `${ADMIN_CLIENT_PREFIX}/${clientId}/status`,
   },
   client: {
     stores: `${CLIENT_PREFIX}/stores`,

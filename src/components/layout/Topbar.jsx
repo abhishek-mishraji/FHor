@@ -4,7 +4,7 @@ import { ROLE_LABELS } from '../../constants/roleConstants'
 import { useAuth } from '../../hooks/useAuth'
 import Button from '../ui/Button'
 
-const Topbar = ({ onToggleSidebar }) => {
+const Topbar = ({ onToggleSidebar, isMobileNavOpen = false }) => {
   const { notify } = useContext(AppContext)
   const { logout, user } = useAuth()
 
@@ -20,9 +20,17 @@ const Topbar = ({ onToggleSidebar }) => {
   return (
     <header className="app-topbar">
       <div className="app-topbar__identity">
-        <Button type="button" variant="ghost" onClick={onToggleSidebar}>
-          Toggle
-        </Button>
+        <button
+          type="button"
+          className={`app-topbar__menu-btn ${isMobileNavOpen ? 'is-open' : ''}`.trim()}
+          onClick={onToggleSidebar}
+          aria-label="Toggle navigation menu"
+          aria-expanded={isMobileNavOpen}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
         <div>
           <p className="app-topbar__welcome">Welcome back</p>
           <h3>{user?.fullName || 'Retail user'}</h3>

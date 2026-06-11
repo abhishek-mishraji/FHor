@@ -216,7 +216,7 @@ function YearlyReportsPage() {
 
     try {
       const payload = {
-        storeId: Number(formValues.storeId),
+        storeId: formValues.storeId,
         reportYear: Number(formValues.reportYear),
         annualSummary: formValues.annualSummary || null,
       }

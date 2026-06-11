@@ -1,14 +1,15 @@
 import { lazy, Suspense } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Route, Routes } from 'react-router-dom'
 import AppLayout from '../components/layout/AppLayout'
 import Loader from '../components/ui/Loader'
 import { ROUTES } from '../constants/routeConstants'
 import { ROLES } from '../constants/roleConstants'
-import { useAuth } from '../hooks/useAuth'
 import ProtectedRoute from './ProtectedRoute'
 import PublicRoute from './PublicRoute'
 import RoleBasedRoute from './RoleBasedRoute'
 
+const LandingPage = lazy(() => import('../pages/Landing/LandingPage'))
+const AboutPage = lazy(() => import('../pages/About/AboutPage'))
 const LoginPage = lazy(() => import('../pages/Login/LoginPage'))
 const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'))
 const ClientsPage = lazy(() => import('../pages/Clients/ClientsPage'))
@@ -20,16 +21,6 @@ const YearlyReportsPage = lazy(() => import('../pages/YearlyReports/YearlyReport
 const ProfilePage = lazy(() => import('../pages/Profile/ProfilePage'))
 const UnauthorizedPage = lazy(() => import('../pages/Unauthorized/UnauthorizedPage'))
 const NotFoundPage = lazy(() => import('../pages/NotFound/NotFoundPage'))
-
-const DefaultRedirect = () => {
-  const { isAuthenticated, user } = useAuth()
-
-  if (!isAuthenticated) {
-    return <Navigate to={ROUTES.login} replace />
-  }
-
-  return <Navigate to={ROUTES.dashboard} replace state={{ role: user?.role }} />
-}
 
 const AppRoutes = () => (
   <Suspense fallback={<Loader label="Loading screen..." />}>
@@ -56,7 +47,8 @@ const AppRoutes = () => (
         </Route>
       </Route>
 
-      <Route path="/" element={<DefaultRedirect />} />
+      <Route path="/" element={<LandingPage />} />
+      <Route path={ROUTES.about} element={<AboutPage />} />
       <Route path={ROUTES.notFound} element={<NotFoundPage />} />
     </Routes>
   </Suspense>

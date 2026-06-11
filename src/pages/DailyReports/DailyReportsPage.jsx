@@ -244,7 +244,7 @@ function DailyReportsPage() {
           [field]: formValues[field] === '' ? null : Number(formValues[field]),
         }),
         {
-          storeId: Number(formValues.storeId),
+          storeId: formValues.storeId,
           reportDate: formValues.reportDate,
         },
       )

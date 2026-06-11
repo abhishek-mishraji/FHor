@@ -171,8 +171,8 @@ function StoreMembersPage() {
 
     try {
       const savedMember = await storeMemberService.addStoreMember({
-        storeId: Number(formValues.storeId),
-        clientId: Number(formValues.clientId),
+        storeId: formValues.storeId,
+        clientId: formValues.clientId,
         role: formValues.role,
       })
 

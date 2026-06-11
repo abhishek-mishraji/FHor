@@ -1,8 +1,10 @@
-import { NavLink } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { ROUTES } from '../../constants/routeConstants'
 import { usePermissions } from '../../hooks/usePermissions'
+import horLogo from '../../assets/hor-logo.png'
+import horBadge from '../../assets/hor-badge.png'
 
-const Sidebar = ({ isCollapsed }) => {
+const Sidebar = ({ isCollapsed, isMobileOpen, onNavigate }) => {
   const { can } = usePermissions()
 
   const items = [
@@ -17,10 +19,24 @@ const Sidebar = ({ isCollapsed }) => {
   ]
 
   return (
-    <aside className={`app-sidebar ${isCollapsed ? 'app-sidebar--collapsed' : ''}`}>
+    <aside
+      className={`app-sidebar ${isCollapsed ? 'app-sidebar--collapsed' : ''} ${
+        isMobileOpen ? 'app-sidebar--mobile-open' : ''
+      }`.trim()}
+    >
       <div className="app-sidebar__brand">
-        <p className="app-sidebar__eyebrow">Hands of Retail</p>
-        <h2>{isCollapsed ? 'HOR' : 'Control Room'}</h2>
+        <Link
+          to={ROUTES.landing}
+          className="app-sidebar__logo"
+          aria-label="Go to the Hands Off Retail home page"
+          onClick={onNavigate}
+        >
+          <img
+            src={isCollapsed ? horBadge : horLogo}
+            alt="Hands Off Retail"
+          />
+        </Link>
+        {!isCollapsed ? <p className="app-sidebar__eyebrow">Control Room</p> : null}
       </div>
 
       <nav className="app-sidebar__nav">
@@ -30,6 +46,7 @@ const Sidebar = ({ isCollapsed }) => {
             <NavLink
               key={item.to}
               to={item.to}
+              onClick={onNavigate}
               className={({ isActive }) =>
                 `app-sidebar__link ${isActive ? 'app-sidebar__link--active' : ''}`.trim()
               }

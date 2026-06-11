@@ -112,7 +112,11 @@ function MonthlyReportsPage() {
     },
     {
       initialData: [],
-      deps: [filters.storeId, filters.clientId, filters.year, filters.month, isAdmin, selectedStoreId],
+      // Admin filters are applied server-side; client month filtering happens
+      // locally, so a month change must not refetch the same store data.
+      deps: isAdmin
+        ? [filters.storeId, filters.clientId, filters.year, filters.month, isAdmin]
+        : [isAdmin, selectedStoreId],
       onError: (requestError) => {
         const details = handleServiceError(requestError)
         notify({
@@ -122,6 +126,13 @@ function MonthlyReportsPage() {
         })
       },
     },
+  )
+
+  // Client reports are fetched per store without server-side filters, so the
+  // month filter is applied locally. Admin lists arrive already filtered.
+  const clientMonthFilter = useCallback(
+    (row) => Number(row.reportMonth) === Number(filters.month),
+    [filters.month],
   )
 
   const {
@@ -136,6 +147,7 @@ function MonthlyReportsPage() {
     data: reportsQuery.data || [],
     searchTerm,
     searchFields: SEARCH_FIELDS,
+    filterFn: !isAdmin && filters.month ? clientMonthFilter : null,
     sortFn: sortByPeriod,
   })
 
@@ -278,10 +290,10 @@ function MonthlyReportsPage() {
           [field]: formValues[field] === '' ? null : Number(formValues[field]),
         }),
         {
-          storeId: Number(formValues.storeId),
+          storeId: formValues.storeId,
           reportMonth: Number(formValues.reportMonth),
           reportYear: Number(formValues.reportYear),
-          departmentId: formValues.departmentId === '' ? null : Number(formValues.departmentId),
+          departmentId: formValues.departmentId === '' ? null : formValues.departmentId,
           departmentName: formValues.departmentName || null,
         },
       )
@@ -333,7 +345,7 @@ function MonthlyReportsPage() {
 
     try {
       const result = await monthlyReportService.uploadReports({
-        storeId: Number(uploadValues.storeId),
+        storeId: uploadValues.storeId,
         reportMonth: Number(uploadValues.reportMonth),
         reportYear: Number(uploadValues.reportYear),
         file: uploadValues.file,
@@ -422,14 +434,24 @@ function MonthlyReportsPage() {
                 />
               </>
             ) : (
-              <SelectInput
-                label="Store"
-                name="selectedStoreId"
-                value={selectedStoreId}
-                onChange={(event) => setSelectedStoreId(event.target.value)}
-                options={storeOptions}
-                placeholder="Choose a store"
-              />
+              <>
+                <SelectInput
+                  label="Store"
+                  name="selectedStoreId"
+                  value={selectedStoreId}
+                  onChange={(event) => setSelectedStoreId(event.target.value)}
+                  options={storeOptions}
+                  placeholder="Choose a store"
+                />
+                <SelectInput
+                  label="Month"
+                  name="month"
+                  value={filters.month}
+                  onChange={handleFilterChange}
+                  options={monthOptions}
+                  placeholder="All months"
+                />
+              </>
             )}
           </div>
 
