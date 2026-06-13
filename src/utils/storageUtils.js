@@ -2,6 +2,7 @@ const safeStorage = typeof window !== 'undefined' ? window.localStorage : null
 
 export const storageKeys = {
   sidebarCollapsed: 'hor.sidebar.collapsed',
+  savedAnalyticsReports: 'hor.analytics.savedReports',
 }
 
 export const readStorageValue = (key, fallbackValue = null) => {

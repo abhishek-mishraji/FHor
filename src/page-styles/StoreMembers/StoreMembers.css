@@ -1,3 +1,3 @@
 .store-members-page .ui-card:first-of-type {
-  border-top: 4px solid rgba(245, 158, 11, 0.24);
+  border-top: 3px solid var(--color-warning);
 }

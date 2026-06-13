@@ -7,6 +7,7 @@ export const ROUTES = {
   unauthorized: '/unauthorized',
   appRoot: '/app',
   dashboard: '/app/dashboard',
+  analytics: '/app/analytics',
   clients: '/app/clients',
   stores: '/app/stores',
   storeMembers: '/app/store-members',

@@ -1,41 +1,56 @@
 .login-page {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(320px, 420px);
-  gap: clamp(1.5rem, 4vw, 4rem);
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 440px);
+  gap: clamp(2rem, 5vw, 5rem);
   align-items: center;
+  background: linear-gradient(135deg, #EFF6FF 0%, #F8FAFC 60%, #EEF2FF 100%);
 }
 
 .login-page__hero {
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
   justify-items: start;
 }
 
 .login-page__logo {
-  width: min(300px, 70%);
+  width: min(280px, 70%);
   height: auto;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .login-page__hero h1 {
-  max-width: 12ch;
+  max-width: 14ch;
+  color: var(--color-ink);
+}
+
+.login-page__hero p {
+  color: var(--color-ink-soft);
+  font-size: 1rem;
+  max-width: 50ch;
 }
 
 .login-page__notice {
-  padding: 1rem 1.15rem;
-  border-radius: var(--radius-md);
-  background: rgba(37, 99, 235, 0.1);
-  color: var(--color-info);
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary-light);
+  border: 1px solid rgba(30, 64, 175, 0.2);
+  color: var(--color-primary-strong);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
 
 .login-page__card {
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 255, 255, 0.86)),
-    radial-gradient(circle at top right, rgba(15, 118, 110, 0.12), transparent 45%);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
 }
 
 @media (max-width: 860px) {
   .login-page {
     grid-template-columns: 1fr;
+    background: var(--color-surface-muted);
+  }
+
+  .login-page__hero {
+    display: none;
   }
 }

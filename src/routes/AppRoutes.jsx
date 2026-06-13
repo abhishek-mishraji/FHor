@@ -12,6 +12,7 @@ const LandingPage = lazy(() => import('../pages/Landing/LandingPage'))
 const AboutPage = lazy(() => import('../pages/About/AboutPage'))
 const LoginPage = lazy(() => import('../pages/Login/LoginPage'))
 const DashboardPage = lazy(() => import('../pages/Dashboard/DashboardPage'))
+const AnalyticsPage = lazy(() => import('../pages/Analytics/AnalyticsPage'))
 const ClientsPage = lazy(() => import('../pages/Clients/ClientsPage'))
 const StoresPage = lazy(() => import('../pages/Stores/StoresPage'))
 const StoreMembersPage = lazy(() => import('../pages/StoreMembers/StoreMembersPage'))
@@ -34,6 +35,7 @@ const AppRoutes = () => (
       <Route path={ROUTES.appRoot} element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="analytics" element={<AnalyticsPage />} />
           <Route path="stores" element={<StoresPage />} />
           <Route path="reports/daily" element={<DailyReportsPage />} />
           <Route path="reports/monthly" element={<MonthlyReportsPage />} />
