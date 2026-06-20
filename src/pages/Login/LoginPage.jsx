@@ -1,12 +1,11 @@
 import { useContext, useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { AppContext } from '../../context/appContext'
-import { DEFAULT_ROLE_HOME } from '../../constants/routeConstants'
+import { DEFAULT_ROLE_HOME, ROUTES } from '../../constants/routeConstants'
 import { useAuth } from '../../hooks/useAuth'
 import { handleServiceError } from '../../utils/errorHandler'
 import { validateLoginForm } from '../../validations/authValidation'
 import Button from '../../components/ui/Button'
-import Card from '../../components/ui/Card'
 import TextInput from '../../components/forms/TextInput'
 import horLogo from '../../assets/hor-logo.png'
 import '../../page-styles/Login/Login.css'
@@ -18,6 +17,7 @@ const initialValues = {
 
 function LoginPage() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { notify } = useContext(AppContext)
   const { isAuthenticated, login, user } = useAuth()
   const [values, setValues] = useState(initialValues)
@@ -72,26 +72,21 @@ function LoginPage() {
 
   return (
     <div className="login-page">
-      <div className="login-page__hero">
-        <img className="login-page__logo" src={horLogo} alt="Hands Off Retail" />
-        <p className="login-page__eyebrow">Enterprise Retail Intelligence</p>
-        <h1>The Hands Off Retail dashboard for governed store operations.</h1>
-        <p>
-          Session access is protected by HttpOnly cookie authentication, automatic refresh, and role-aware
-          routing across admin and client workspaces.
-        </p>
+      <div className="login-panel">
+        <div className="login-panel__logo-wrap">
+          <img className="login-panel__logo" src={horLogo} alt="Hands Off Retail" />
+        </div>
+
+        <hr className="login-panel__divider" />
+
+        <h2 className="login-panel__title">CStore Essentials</h2>
+
         {location.state?.from ? (
-          <div className="login-page__notice">
+          <div className="login-panel__notice">
             Please sign in to continue to {location.state.from.pathname}.
           </div>
         ) : null}
-      </div>
 
-      <Card
-        className="login-page__card"
-        title="Sign in"
-        subtitle="Use your administrator or client account to access the workspace."
-      >
         <form className="form-grid" onSubmit={handleSubmit}>
           <TextInput
             label="Email"
@@ -100,7 +95,7 @@ function LoginPage() {
             value={values.email}
             onChange={handleChange}
             error={errors.email}
-            placeholder="admin@gmail.com"
+            placeholder="Email"
             autoComplete="email"
           />
           <TextInput
@@ -110,14 +105,18 @@ function LoginPage() {
             value={values.password}
             onChange={handleChange}
             error={errors.password}
-            placeholder="Enter password"
+            placeholder="Password"
             autoComplete="current-password"
           />
-          <Button type="submit" isLoading={submitting}>
-            Access dashboard
+          <Button type="submit" className="login-panel__btn" isLoading={submitting}>
+            Login
           </Button>
         </form>
-      </Card>
+
+        <button className="login-panel__home-btn" onClick={() => navigate(ROUTES.landing)}>
+          ← Back to Home
+        </button>
+      </div>
     </div>
   )
 }
