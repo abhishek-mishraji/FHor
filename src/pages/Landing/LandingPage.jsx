@@ -283,9 +283,9 @@ const HeroMockup = () => (
         </div>
         <div className="lp-mock__ranking">
           {[
-            ['Walmart Downtown', 92],
-            ['Costco East', 78],
-            ['Target Uptown', 61],
+            ['Citgo', 92],
+            ['Sunoco', 78],
+            ['Stop & Shop', 61],
           ].map(([store, width]) => (
             <div key={store} className="lp-mock__rank-row">
               <small>{store}</small>
