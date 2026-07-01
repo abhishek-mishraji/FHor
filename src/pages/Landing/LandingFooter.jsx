@@ -1,38 +1,38 @@
-import { Link } from 'react-router-dom'
-import { ROUTES } from '../../constants/routeConstants'
-import horLogo from '../../assets/hor-logo.png'
-import { Icon } from './LandingIcons'
-import { CONTACT_MAILTO, DEMO_MAILTO } from './landingConstants'
+import { Link } from "react-router-dom";
+import { ROUTES } from "../../constants/routeConstants";
+import horLogo from "../../assets/hor-logo.png";
+import { Icon } from "./LandingIcons";
+import { CONTACT_MAILTO, DEMO_MAILTO } from "./landingConstants";
 
 const FOOTER_COLUMNS = [
   {
-    title: 'Services',
+    title: "Services",
     links: [
-      { label: 'Custom Retail Software' },
-      { label: 'Analytics & BI' },
-      { label: 'Reporting Automation' },
-      { label: 'System Integration' },
+      { label: "Custom Retail Software" },
+      { label: "Analytics & BI" },
+      { label: "Reporting Automation" },
+      { label: "System Integration" },
     ],
   },
   {
-    title: 'Solutions',
+    title: "Solutions",
     links: [
-      { label: 'Multi-Store Management' },
-      { label: 'Store Performance' },
-      { label: 'Sales Analytics' },
-      { label: 'Executive Dashboards' },
+      { label: "Multi-Store Management" },
+      { label: "Store Performance" },
+      { label: "Sales Analytics" },
+      { label: "Executive Dashboards" },
     ],
   },
   {
-    title: 'Company',
+    title: "Company",
     links: [
-      { label: 'About Us', to: ROUTES.about },
-      { label: 'Our Process', to: ROUTES.landing },
-      { label: 'Testimonials', to: ROUTES.landing },
-      { label: 'Careers' },
+      { label: "About Us", to: ROUTES.about },
+      { label: "Our Process", to: ROUTES.landing },
+      { label: "Testimonials", to: ROUTES.landing },
+      { label: "Careers" },
     ],
   },
-]
+];
 
 const LandingFooter = () => (
   <footer className="lp-footer">
@@ -42,8 +42,8 @@ const LandingFooter = () => (
           <img src={horLogo} alt="Hands Off Retail" />
         </p>
         <p>
-          Custom retail software, analytics, and reporting for stores, chains, and
-          distributors that run on data.
+          Custom retail software, analytics, and reporting for stores, chains,
+          and distributors that run on data.
         </p>
         <a href="https://handsoffretail.com" target="_blank" rel="noreferrer">
           handsoffretail.com
@@ -79,14 +79,21 @@ const LandingFooter = () => (
           </li>
         </ul>
         <div className="lp-footer__social" aria-label="Social links">
-          <a href="https://handsoffretail.com" target="_blank" rel="noreferrer" aria-label="Website">
+          <a
+            href="https://handsoffretail.com"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Website"
+          >
             <Icon name="cloud" size={16} />
           </a>
-          <a href={CONTACT_MAILTO} aria-label="Email">
-            <Icon name="report" size={16} />
-          </a>
-          <a href={DEMO_MAILTO} aria-label="Book a demo">
-            <Icon name="handshake" size={16} />
+          <a
+            href="https://www.linkedin.com/company/hands-off-retail/"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="LinkedIn"
+          >
+            <Icon name="linkedin" size={28} />
           </a>
         </div>
       </nav>
@@ -95,6 +102,6 @@ const LandingFooter = () => (
       <p>© {new Date().getFullYear()} Hands Off Retail. All rights reserved.</p>
     </div>
   </footer>
-)
+);
 
-export default LandingFooter
+export default LandingFooter;
