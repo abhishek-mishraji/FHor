@@ -694,6 +694,9 @@
 .dr-report-card__metric {
   display: flex;
   flex-direction: column;
+  align-items: center;   /* Center child elements horizontally */
+  justify-content: center; /* Center vertically if there's extra height */
+  text-align: center;    /* Center the text */
   gap: 0.1rem;
   padding: 0.4rem 0.5rem;
   background: var(--color-surface-muted);

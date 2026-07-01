@@ -656,6 +656,9 @@
 .mr-report-card__metric {
   display: flex;
   flex-direction: column;
+  justify-content: center; /* Vertical centering */
+  align-items: center;     /* Horizontal centering */
+  text-align: center;
   gap: 0.1rem;
   padding: 0.4rem 0.5rem;
   background: var(--color-surface-muted);
