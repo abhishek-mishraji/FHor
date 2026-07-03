@@ -181,6 +181,7 @@
   color: var(--color-ink);
   line-height: 1.1;
   letter-spacing: -0.03em;
+  overflow-wrap: break-word;
 }
 
 .db-kpi-card__caption {
@@ -456,6 +457,302 @@
   transform: translateX(2px);
 }
 
+/* ── Hero cards: Last Daily / Latest Monthly report ──── */
+
+.db-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.db-hero-card .ui-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.db-hero-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.db-hero-store {
+  display: block;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.db-hero-date {
+  display: block;
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+  margin-top: 0.15rem;
+}
+
+.db-hero-amount {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.db-hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.875rem;
+}
+
+.db-hero-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--color-surface-muted);
+  border-radius: var(--radius-sm);
+}
+
+.db-hero-kpi__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-ink-muted);
+}
+
+.db-hero-kpi__value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.db-hero-card .db-card-footer {
+  border-top: none;
+  padding-top: 0;
+  margin-top: 0;
+}
+
+/* ── Section heading (My stores / Quick actions) ─────── */
+
+.db-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.db-section__header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.db-section__title {
+  margin: 0;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  letter-spacing: -0.01em;
+}
+
+.db-section__count {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+}
+
+/* ── My stores grid ───────────────────────────────────── */
+
+.db-store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 1rem;
+}
+
+.db-store-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.125rem 1.25rem;
+  transition: box-shadow 0.15s ease, transform 0.12s ease;
+}
+
+.db-store-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.db-store-card__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.db-store-card__name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.db-store-card__owner {
+  font-size: 0.8125rem;
+  color: var(--color-ink-muted);
+  margin-top: -0.4rem;
+}
+
+.db-store-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.db-store-card__meta-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--color-ink-soft);
+}
+
+.db-store-card__meta-item svg {
+  color: var(--color-ink-muted);
+  flex-shrink: 0;
+}
+
+.db-store-card__meta-item--muted {
+  padding-left: 1.35rem;
+  font-size: 0.75rem;
+  color: var(--color-ink-muted);
+}
+
+.db-store-card__actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+
+.db-store-card__actions button {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.3rem;
+  cursor: pointer;
+  transition: background 0.14s ease, transform 0.1s ease;
+}
+
+.db-store-card__actions button:hover {
+  background: var(--color-primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+/* Loading skeleton shimmer — used while per-store activity loads */
+
+.db-skeleton {
+  display: inline-block;
+  height: 0.75rem;
+  width: 110px;
+  border-radius: var(--radius-xs);
+  background: linear-gradient(90deg, var(--color-surface-muted) 25%, var(--color-border) 50%, var(--color-surface-muted) 75%);
+  background-size: 200% 100%;
+  animation: db-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.db-skeleton--short {
+  width: 80px;
+  height: 0.65rem;
+}
+
+@keyframes db-skeleton-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ── Quick action cards (client) ──────────────────────── */
+
+.db-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.db-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.6rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+  text-decoration: none;
+  transition: box-shadow 0.15s ease, transform 0.12s ease, border-color 0.15s ease;
+}
+
+.db-action-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+.db-action-card__icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.db-action-card__icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.db-action-card--primary   { border-top: 3px solid var(--color-primary); }
+.db-action-card--secondary { border-top: 3px solid var(--color-secondary); }
+.db-action-card--success   { border-top: 3px solid var(--color-success); }
+.db-action-card--warning   { border-top: 3px solid var(--color-warning); }
+.db-action-card--info      { border-top: 3px solid var(--color-info); }
+
+.db-action-card--primary   .db-action-card__icon { background: var(--color-primary-light);   color: var(--color-primary); }
+.db-action-card--secondary .db-action-card__icon { background: var(--color-secondary-light); color: var(--color-secondary); }
+.db-action-card--success   .db-action-card__icon { background: var(--color-success-light);   color: var(--color-success); }
+.db-action-card--warning   .db-action-card__icon { background: var(--color-warning-light);   color: var(--color-warning); }
+.db-action-card--info      .db-action-card__icon { background: var(--color-info-light);      color: var(--color-info); }
+
+.db-action-card__label {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.db-action-card__desc {
+  font-size: 0.78rem;
+  color: var(--color-ink-muted);
+}
+
 /* ── Empty / shared ──────────────────────────────────── */
 
 .db-empty-hint {
@@ -476,6 +773,10 @@
 
 @media (max-width: 900px) {
   .db-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-hero-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -504,6 +805,18 @@
   .db-kpi-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .db-hero-kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .db-store-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .db-store-card__actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 480px) {
@@ -513,5 +826,18 @@
 
   .db-kpi-card__value {
     font-size: 1.5rem;
+  }
+
+  .db-hero-head {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .db-hero-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .db-action-grid {
+    grid-template-columns: 1fr;
   }
 }
