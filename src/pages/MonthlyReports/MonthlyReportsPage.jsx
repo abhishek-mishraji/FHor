@@ -4,6 +4,7 @@ import PageHeader from '../../components/common/PageHeader'
 import AsyncState from '../../components/common/AsyncState'
 import DataTable from '../../components/common/DataTable'
 import PaginationBar from '../../components/common/PaginationBar'
+import MultiSelectInput from '../../components/forms/MultiSelectInput'
 import SelectInput from '../../components/forms/SelectInput'
 import TextInput from '../../components/forms/TextInput'
 import FileInput from '../../components/forms/FileInput'
@@ -118,7 +119,7 @@ function MonthlyReportsPage() {
 
   // ── Business state ──────────────────────────────────────────────────────
   const [searchTerm,    setSearchTerm]   = useState('')
-  const [filters,       setFilters]      = useState({ storeId: '', clientId: '', year: '', month: '' })
+  const [filters,       setFilters]      = useState({ storeId: '', clientId: '', year: '', months: [] })
   const [selectedReport, setSelectedReport] = useState(null)
   const [formValues,    setFormValues]   = useState(initialFormValues)
   const [formErrors,    setFormErrors]   = useState({})
@@ -159,14 +160,24 @@ function MonthlyReportsPage() {
 
   const reportsQuery = useApi(
     () => {
-      if (isAdmin) return monthlyReportService.getAdminReports(filters)
+      if (isAdmin) {
+        // The backend month filter still accepts a single value, so it's only
+        // sent when exactly one month is checked; multi-month selections are
+        // narrowed client-side below (monthsFilterFn) without touching the API.
+        return monthlyReportService.getAdminReports({
+          storeId: filters.storeId,
+          clientId: filters.clientId,
+          year: filters.year,
+          month: filters.months.length === 1 ? filters.months[0] : '',
+        })
+      }
       if (!selectedStoreId) return Promise.resolve([])
       return monthlyReportService.getClientReportsByStore(selectedStoreId)
     },
     {
       initialData: [],
       deps: isAdmin
-        ? [filters.storeId, filters.clientId, filters.year, filters.month, isAdmin]
+        ? [filters.storeId, filters.clientId, filters.year, filters.months, isAdmin]
         : [isAdmin, selectedStoreId],
       onError: (requestError) => {
         const details = handleServiceError(requestError)
@@ -204,6 +215,18 @@ function MonthlyReportsPage() {
     [clientsQuery.data],
   )
 
+  // Store owner lookup for the PDF export's Client/Store grouping — display only.
+  const storeMetaById = useMemo(
+    () =>
+      Object.fromEntries(
+        (storesQuery.data || []).map((s) => [
+          String(s.storeId),
+          { storeName: s.storeName, ownerName: s.clientName },
+        ]),
+      ),
+    [storesQuery.data],
+  )
+
   const uniqueStores = useMemo(
     () => new Set((reportsQuery.data || []).map((r) => r.storeId)).size,
     [reportsQuery.data],
@@ -239,11 +262,12 @@ function MonthlyReportsPage() {
     return cols
   }, [visibleColumnDefs, isAdmin, openEditModal])
 
-  // Client reports are fetched per store without server-side filters, so the
-  // month filter is applied locally. Admin lists arrive already filtered.
-  const clientMonthFilter = useCallback(
-    (row) => Number(row.reportMonth) === Number(filters.month),
-    [filters.month],
+  // Client reports are fetched per store without server-side month filters,
+  // and the admin API only narrows by a single month (see reportsQuery above),
+  // so multi-month selections are always applied locally for both roles.
+  const monthsFilterFn = useCallback(
+    (row) => filters.months.includes(Number(row.reportMonth)),
+    [filters.months],
   )
 
   const { page, totalItems, totalPages, pageItems, pageSize, setPage, setPageSize, filteredData } =
@@ -251,7 +275,7 @@ function MonthlyReportsPage() {
       data: reportsQuery.data || [],
       searchTerm,
       searchFields: SEARCH_FIELDS,
-      filterFn: !isAdmin && filters.month ? clientMonthFilter : null,
+      filterFn: filters.months.length ? monthsFilterFn : null,
       sortFn: sortByPeriod,
     })
 
@@ -273,7 +297,7 @@ function MonthlyReportsPage() {
   }
 
   const resetFilters = () => {
-    setFilters({ storeId: '', clientId: '', year: '', month: '' })
+    setFilters({ storeId: '', clientId: '', year: '', months: [] })
     setSearchTerm('')
   }
 
@@ -282,7 +306,7 @@ function MonthlyReportsPage() {
     setFormValues({
       ...initialFormValues,
       storeId: filters.storeId || selectedStoreId || '',
-      reportMonth: filters.month || '',
+      reportMonth: filters.months.length === 1 ? String(filters.months[0]) : '',
       reportYear: filters.year || '',
     })
     setFormErrors({})
@@ -419,20 +443,26 @@ function MonthlyReportsPage() {
     }
     setExporting(true)
     try {
-      const exportCols = visibleColumnDefs.map((c) => ({ key: c.key, header: c.header }))
+      const exportCols = visibleColumnDefs.map((c) => ({ key: c.key, header: c.header, render: c.render }))
       const matrix = buildExportMatrix(exportCols, filteredData)
-      const filename = `monthly_reports_${filters.month || 'all'}_${filters.year || 'all'}`
+      const filename = `monthly_reports_${filters.months.length ? filters.months.join('-') : 'all'}_${filters.year || 'all'}`
       if (format === 'csv')   exportCsv(matrix, filename)
       if (format === 'excel') exportExcel(matrix, filename)
       if (format === 'pdf')
         await exportPdf({
           title: 'Monthly Reports',
           subtitle:
-            filters.month && filters.year
-              ? formatMonthYear(filters.month, filters.year)
-              : 'All periods',
+            filters.months.length === 1 && filters.year
+              ? formatMonthYear(filters.months[0], filters.year)
+              : filters.months.length
+                ? `${filters.months.length} months selected`
+                : 'All periods',
           matrix,
           chartContainer: null,
+          reportType: 'Monthly',
+          rows: filteredData,
+          columns: visibleColumnDefs,
+          storeMeta: storeMetaById,
         })
     } catch (err) {
       notify({ type: 'error', title: 'Export failed', message: err?.message || 'Could not generate export.' })
@@ -536,13 +566,15 @@ function MonthlyReportsPage() {
           {/* Filter fields row */}
           <div className="mr-filter-bar__row">
             <div className="mr-filter-bar__field">
-              <SelectInput
+              <MultiSelectInput
                 label="Month"
-                name="month"
-                value={filters.month}
+                name="months"
+                values={filters.months}
                 onChange={handleFilterChange}
                 options={monthOptions}
                 placeholder="All months"
+                unitLabel="Month"
+                showChips
               />
             </div>
 
@@ -754,12 +786,14 @@ function MonthlyReportsPage() {
             <span className="mr-stats-bar__label">Stores</span>
           </div>
         )}
-        {(filters.month || filters.year) && (
+        {(filters.months.length > 0 || filters.year) && (
           <div className="mr-stats-bar__item">
             <span className="mr-stats-bar__value">
-              {filters.month && filters.year
-                ? formatMonthYear(filters.month, filters.year)
-                : filters.year || `Month ${filters.month}`}
+              {filters.months.length === 1 && filters.year
+                ? formatMonthYear(filters.months[0], filters.year)
+                : filters.months.length > 1
+                  ? `${filters.months.length} months${filters.year ? ` · ${filters.year}` : ''}`
+                  : filters.year || `Month ${filters.months[0]}`}
             </span>
             <span className="mr-stats-bar__label">Period filter</span>
           </div>

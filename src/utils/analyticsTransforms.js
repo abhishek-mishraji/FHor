@@ -83,5 +83,13 @@ export const buildKpiSummaries = (analytics) =>
 // Export matrix honours column visibility: pass the same columns the table renders.
 export const buildExportMatrix = (columns, rows) => ({
   headers: columns.map((column) => column.header),
-  body: rows.map((row) => columns.map((column) => row[column.key] ?? '')),
+  body: rows.map((row) =>
+    columns.map((column) => {
+      const raw = row[column.key]
+      if ((raw === undefined || raw === null) && column.render) {
+        return String(column.render(row) ?? '')
+      }
+      return raw ?? ''
+    }),
+  ),
 })

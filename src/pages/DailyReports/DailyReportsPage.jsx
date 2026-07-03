@@ -28,7 +28,7 @@ const ALL_COLUMNS = [
   { key: 'storeName',    header: 'Store',          sticky: true, render: (r) => r.storeName ?? '—' },
   { key: 'reportDate',  header: 'Report date',    sticky: true, render: (r) => formatDate(r.reportDate) },
   { key: 'groceryTotal', header: 'Grocery total', render: (r) => formatCurrency(r.groceryTotal) },
-  { key: 'volume',      header: 'Volume',          render: (r) => formatNumber(r.volume) },
+  { key: 'volume',      header: 'Volume (Gallons)', render: (r) => formatNumber(r.volume) },
   { key: 'cashDeposit', header: 'Cash deposit',   render: (r) => formatCurrency(r.cashDeposit) },
   { key: 'checkDeposit', header: 'Check deposit', render: (r) => formatCurrency(r.checkDeposit) },
   { key: 'overShort',   header: 'Over / short',   render: (r) => formatCurrency(r.overShort) },
@@ -104,7 +104,7 @@ const sortByDate = (l, r) => String(r.reportDate).localeCompare(String(l.reportD
 
 const numericFields = [
   ['groceryTotal', 'Grocery total'],
-  ['volume',       'Volume'],
+  ['volume',       'Volume (Gallons)'],
   ['cashDeposit',  'Cash deposit'],
   ['checkDeposit', 'Check deposit'],
   ['overShort',    'Over short'],
@@ -211,6 +211,18 @@ function DailyReportsPage() {
   const clientOptions = useMemo(
     () => (clientsQuery.data || []).map((c) => ({ label: c.fullName, value: String(c.clientId) })),
     [clientsQuery.data],
+  )
+
+  // Store owner lookup for the PDF export's Client/Store grouping — display only.
+  const storeMetaById = useMemo(
+    () =>
+      Object.fromEntries(
+        (storesQuery.data || []).map((s) => [
+          String(s.storeId),
+          { storeName: s.storeName, ownerName: s.clientName },
+        ]),
+      ),
+    [storesQuery.data],
   )
 
   const uniqueStores = useMemo(
@@ -400,6 +412,10 @@ function DailyReportsPage() {
           subtitle: filters.from ? `${filters.from} to ${filters.to}` : 'All dates',
           matrix,
           chartContainer: null,
+          reportType: 'Daily',
+          rows: filteredData,
+          columns: visibleColumnDefs,
+          storeMeta: storeMetaById,
         })
     } catch (err) {
       notify({ type: 'error', title: 'Export failed', message: err?.message || 'Could not generate export.' })

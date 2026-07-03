@@ -1,3 +1,6 @@
+import horLogo from '../assets/hor-logo.png'
+import { formatDate, formatMonthYear } from './dateUtils'
+
 const triggerDownload = (blob, filename) => {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -107,42 +110,305 @@ export const exportChartPng = async (chartContainer, filename) => {
   triggerDownload(blob, `${filename}.png`)
 }
 
-// Opens a print-ready window; the browser print dialog saves it as PDF.
-export const exportPdf = async ({ title, subtitle, matrix, chartContainer }) => {
-  let chartImageHtml = ''
+const loadImageAsDataUrl = async (url) => {
+  try {
+    const res = await fetch(url)
+    const blob = await res.blob()
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
+  } catch {
+    return ''
+  }
+}
 
+const buildPdfTable = ({ headers, body }) => {
+  const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')
+  const bodyRows = body
+    .map((row, i) => {
+      const cells = row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')
+      return `<tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">${cells}</tr>`
+    })
+    .join('')
+  return `<table class="data-table"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`
+}
+
+// Period grouping per report type — mirrors the "group by" rule for each report page.
+const PERIOD_BY_REPORT_TYPE = {
+  Daily: (row) => ({
+    key: row.reportDate || '',
+    label: `Report Date: ${formatDate(row.reportDate)}`,
+  }),
+  Monthly: (row) => ({
+    key: `${row.reportYear || ''}-${String(row.reportMonth || '').padStart(2, '0')}`,
+    label: `Month: ${formatMonthYear(row.reportMonth, row.reportYear)}`,
+  }),
+  Yearly: (row) => ({
+    key: String(row.reportYear ?? ''),
+    label: `Year: ${row.reportYear ?? 'N/A'}`,
+  }),
+}
+
+// Prefers the column's render() so PDF cells match what the on-screen table shows.
+const pdfCell = (row, column) => {
+  if (column.render) {
+    const rendered = column.render(row)
+    return rendered === null || rendered === undefined ? '' : String(rendered)
+  }
+  return row[column.key] ?? ''
+}
+
+const alphabetically = (a, b) => String(a).localeCompare(String(b), undefined, { sensitivity: 'base' })
+
+// Within-month row order — the one dimension the task names explicitly
+// (Department Name A–Z for Monthly). Report types with no such field keep
+// their incoming order (Array.sort is stable), which is the existing
+// business rule for Daily/Yearly.
+const ROW_SORT_BY_REPORT_TYPE = {
+  Monthly: (a, b) => alphabetically(a.departmentName ?? '', b.departmentName ?? ''),
+}
+
+// Buckets rows into Client → Store → Month/Year/Date, then sorts every level:
+// clients and stores alphabetically, periods chronologically, and rows within
+// a period per ROW_SORT_BY_REPORT_TYPE. Rendering never touches raw API order.
+const groupAndSortRows = (rows, storeMeta, reportType) => {
+  const periodOf = PERIOD_BY_REPORT_TYPE[reportType] || PERIOD_BY_REPORT_TYPE.Yearly
+  const rowSort = ROW_SORT_BY_REPORT_TYPE[reportType]
+
+  const clients = new Map()
+
+  rows.forEach((row) => {
+    const meta = storeMeta?.[String(row.storeId)] || {}
+    const ownerName = meta.ownerName || 'Unassigned Client'
+    const storeName = row.storeName || meta.storeName || 'Unknown store'
+    const storeKey = row.storeId ?? storeName
+
+    if (!clients.has(ownerName)) clients.set(ownerName, new Map())
+    const stores = clients.get(ownerName)
+    if (!stores.has(storeKey)) stores.set(storeKey, { storeName, rows: [] })
+    stores.get(storeKey).rows.push(row)
+  })
+
+  return [...clients.entries()]
+    .sort(([a], [b]) => alphabetically(a, b))
+    .map(([ownerName, stores]) => ({
+      ownerName,
+      stores: [...stores.values()]
+        .sort((a, b) => alphabetically(a.storeName, b.storeName))
+        .map((store) => {
+          const periods = new Map()
+          store.rows.forEach((row) => {
+            const { key, label } = periodOf(row)
+            if (!periods.has(key)) periods.set(key, { label, rows: [] })
+            periods.get(key).rows.push(row)
+          })
+
+          const sortedPeriods = [...periods.entries()].sort(([a], [b]) =>
+            String(a).localeCompare(String(b), undefined, { numeric: true }),
+          )
+
+          return {
+            storeName: store.storeName,
+            periods: sortedPeriods.map(([, period]) => ({
+              label: period.label,
+              rows: rowSort ? [...period.rows].sort(rowSort) : period.rows,
+            })),
+          }
+        }),
+    }))
+}
+
+const buildGroupedSectionsHtml = ({ rows, columns, reportType, storeMeta, exportDateTime }) => {
+  const clients = groupAndSortRows(rows, storeMeta, reportType)
+  const headers = columns.map((c) => c.header)
+
+  let html = ''
+
+  clients.forEach(({ ownerName, stores }) => {
+    html += `<section class="client-section">
+      <h2 class="client-heading">Client: ${escapeHtml(ownerName)}</h2>`
+
+    stores.forEach((store) => {
+      // No forced page break here — the store flows onto the current page and
+      // only spills to the next one if its heading block (below) doesn't fit.
+      html += `<div class="store-section">`
+
+      store.periods.forEach((period, periodIndex) => {
+        const bodyRows = period.rows.map((row) => columns.map((c) => pdfCell(row, c)))
+
+        // Only the first period of a store repeats the store banner.
+        const storeBannerHtml =
+          periodIndex === 0
+            ? `<div class="store-banner">
+                <div class="store-banner__name">Store: ${escapeHtml(store.storeName)}</div>
+                <div class="store-banner__row">
+                  <span><b>Owner:</b> ${escapeHtml(ownerName)}</span>
+                  <span><b>Report Type:</b> ${escapeHtml(reportType)}</span>
+                </div>
+              </div>`
+            : ''
+
+        // One table per period — the header cell markup appears exactly once
+        // here. The browser's print engine (thead { display: table-header-group })
+        // reprints it automatically if, and only if, this table spans a real
+        // page break; it never repeats mid-page.
+        html += `<div class="period-group">
+          <div class="section-lead">
+            ${storeBannerHtml}
+            <div class="period-banner">
+              <span>${escapeHtml(period.label)}</span>
+              <span>Generated On: ${escapeHtml(exportDateTime)}</span>
+            </div>
+          </div>
+          ${buildPdfTable({ headers, body: bodyRows })}
+        </div>`
+      })
+
+      html += `</div>` // .store-section
+    })
+
+    html += `</section>` // .client-section
+  })
+
+  return html
+}
+
+// Opens a print-ready window; the browser print dialog saves it as PDF.
+// When reportType/rows/columns are supplied, the report is grouped into a
+// Client → Store → Period hierarchy; otherwise it falls back to a single flat table.
+export const exportPdf = async ({
+  title,
+  subtitle,
+  matrix,
+  chartContainer,
+  reportType,
+  rows,
+  columns,
+  storeMeta,
+}) => {
+  const logoDataUrl = await loadImageAsDataUrl(horLogo)
+
+  let chartImageHtml = ''
   if (chartContainer?.querySelector('svg')) {
     const dataUrl = await renderChartToDataUrl(chartContainer)
-    chartImageHtml = `<img src="${dataUrl}" style="width:100%;max-width:900px;" alt="Chart" />`
+    chartImageHtml = `<img src="${dataUrl}" class="chart-img" alt="Chart" />`
   }
 
   const printWindow = window.open('', '_blank', 'width=1024,height=768')
-
   if (!printWindow) {
     throw new Error('Pop-up blocked. Allow pop-ups to export as PDF.')
   }
 
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>${escapeHtml(title)}</title>
-        <style>
-          body { font-family: 'Segoe UI', Arial, sans-serif; color: #11203b; padding: 24px; }
-          h1 { margin-bottom: 4px; }
-          p.subtitle { color: #53617c; margin-top: 0; }
-          table { border-collapse: collapse; width: 100%; margin-top: 16px; }
-          th, td { border: 1px solid #cbd5e1; padding: 8px 10px; font-size: 12px; text-align: left; }
-          th { background: #edf4ff; text-transform: uppercase; font-size: 11px; letter-spacing: 0.06em; }
-        </style>
-      </head>
-      <body>
-        <h1>${escapeHtml(title)}</h1>
-        <p class="subtitle">${escapeHtml(subtitle)}</p>
-        ${chartImageHtml}
-        ${buildHtmlTable(matrix)}
-        <script>window.onload = () => { window.print(); }</script>
-      </body>
-    </html>
-  `)
+  const exportDateTime = new Date().toLocaleString('en-US', {
+    year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit',
+  })
+
+  const isGrouped = Array.isArray(rows) && Array.isArray(columns) && Boolean(reportType)
+  const recordCount = (isGrouped ? rows.length : matrix.body.length).toLocaleString()
+
+  const summaryHtml = isGrouped
+    ? `<div class="doc-summary">
+        <span><b>Report Type:</b> ${escapeHtml(reportType)}</span>
+        <span><b>Generated On:</b> ${escapeHtml(exportDateTime)}</span>
+        <span><b>Total Records:</b> ${recordCount}</span>
+      </div>`
+    : `<div class="meta-grid">
+        <span class="meta-label">Period</span>   <span class="meta-value">${escapeHtml(subtitle)}</span>
+        <span class="meta-label">Exported</span> <span class="meta-value">${escapeHtml(exportDateTime)}</span>
+        <span class="meta-label">Records</span>  <span class="meta-value">${recordCount}</span>
+      </div>`
+
+  const bodyHtml = isGrouped
+    ? buildGroupedSectionsHtml({ rows, columns, reportType, storeMeta, exportDateTime })
+    : `${chartImageHtml}${buildPdfTable(matrix)}`
+
+  printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(title)} — Hands Of Retail</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    @page {
+      size: A4 portrait;
+      margin: 14mm 15mm 18mm 15mm;
+      @bottom-left  { content: "Hands Of Retail · https://handsoffretail.com"; font-size: 8pt; color: #94a3b8; font-family: 'Segoe UI', Arial, sans-serif; }
+      @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #94a3b8; font-family: 'Segoe UI', Arial, sans-serif; }
+    }
+
+    body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #0f172a; background: #fff; }
+
+    .doc-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 12px; border-bottom: 2.5px solid #1e3a6e; margin-bottom: 16px; }
+    .logo        { height: 38px; width: auto; }
+    .company-block { text-align: right; }
+    .company-name  { font-size: 13pt; font-weight: 700; color: #1e3a6e; letter-spacing: -0.2px; }
+    .company-url   { font-size: 8pt; color: #64748b; margin-top: 2px; }
+
+    .report-title { font-size: 15pt; font-weight: 700; color: #1e3a6e; margin-bottom: 10px; }
+
+    .meta-grid { display: grid; grid-template-columns: max-content 1fr; gap: 3px 16px; margin-bottom: 18px; }
+    .meta-label { font-size: 8.5pt; font-weight: 600; color: #64748b; white-space: nowrap; }
+    .meta-value { font-size: 8.5pt; color: #0f172a; }
+
+    .doc-summary { display: flex; flex-wrap: wrap; gap: 6px 22px; margin-bottom: 20px; padding: 9px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 8.5pt; color: #475569; }
+    .doc-summary b { color: #1e3a6e; font-weight: 600; }
+
+    .client-section { margin-bottom: 6px; }
+    .client-heading { font-size: 12.5pt; font-weight: 700; color: #fff; background: #1e3a6e; padding: 7px 14px; border-radius: 4px; margin: 18px 0 12px; }
+    .client-section:first-of-type .client-heading { margin-top: 0; }
+
+    .store-section { margin-bottom: 16px; }
+    .store-banner { border: 1.5px solid #cbd5e1; border-left: 5px solid #1e3a6e; border-radius: 4px; padding: 9px 14px; margin-bottom: 10px; background: #f8fafc; }
+    .store-banner__name { font-size: 11.5pt; font-weight: 700; color: #1e3a6e; margin-bottom: 4px; }
+    .store-banner__row { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 8.5pt; color: #475569; }
+    .store-banner__row b { color: #0f172a; font-weight: 600; }
+
+    .period-banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; background: #eef2f7; border-left: 3px solid #1e3a6e; padding: 5px 10px; font-size: 8pt; font-weight: 600; color: #1e3a6e; margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.04em; }
+
+    .period-group { margin-bottom: 14px; }
+    .period-group:last-child { margin-bottom: 0; }
+
+    /* Store header + owner + period header travel together as one
+       unbreakable unit — this stops a section heading being stranded alone
+       at the bottom of a page, without forcing an unnecessary page break
+       (the table right after it is untouched and paginates on its own). */
+    .section-lead { break-inside: avoid; page-break-inside: avoid; margin-bottom: 6px; }
+
+    .data-table { border-collapse: collapse; width: 100%; table-layout: auto; }
+    .data-table thead tr { background: #1e3a6e; }
+    .data-table th { padding: 7px 10px; font-size: 7.5pt; font-weight: 600; color: #fff; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
+    .data-table td { padding: 5.5px 10px; font-size: 9pt; color: #0f172a; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    .row-even { background: #fff; }
+    .row-odd  { background: #f8fafc; }
+
+    thead { display: table-header-group; }
+    tbody { display: table-row-group; }
+    tr    { page-break-inside: avoid; break-inside: avoid; }
+
+    .chart-img { width: 100%; max-width: 100%; margin: 14px 0; }
+  </style>
+</head>
+<body>
+  <div class="doc-header">
+    ${logoDataUrl ? `<img class="logo" src="${logoDataUrl}" alt="Hands Of Retail" />` : '<div></div>'}
+    <div class="company-block">
+      <div class="company-name">Hands Of Retail</div>
+      <div class="company-url">handsoffretail.com</div>
+    </div>
+  </div>
+
+  <h1 class="report-title">${escapeHtml(title)}</h1>
+
+  ${summaryHtml}
+
+  ${bodyHtml}
+
+  <script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`)
   printWindow.document.close()
 }

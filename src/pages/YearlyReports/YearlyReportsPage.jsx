@@ -4,6 +4,7 @@ import PageHeader from '../../components/common/PageHeader'
 import AsyncState from '../../components/common/AsyncState'
 import DataTable from '../../components/common/DataTable'
 import PaginationBar from '../../components/common/PaginationBar'
+import MultiSelectInput from '../../components/forms/MultiSelectInput'
 import SelectInput from '../../components/forms/SelectInput'
 import TextAreaInput from '../../components/forms/TextAreaInput'
 import TextInput from '../../components/forms/TextInput'
@@ -81,7 +82,7 @@ function YearlyReportsPage() {
 
   // ── Business state ──────────────────────────────────────────────────────
   const [searchTerm,     setSearchTerm]    = useState('')
-  const [filters,        setFilters]       = useState({ storeId: '', clientId: '', year: '' })
+  const [filters,        setFilters]       = useState({ storeId: '', clientId: '', years: [] })
   const [selectedReport, setSelectedReport] = useState(null)
   const [formValues,     setFormValues]    = useState(initialFormValues)
   const [formErrors,     setFormErrors]    = useState({})
@@ -118,13 +119,22 @@ function YearlyReportsPage() {
 
   const reportsQuery = useApi(
     () => {
-      if (isAdmin) return yearlyReportService.getAdminReports(filters)
+      if (isAdmin) {
+        // The backend year filter still accepts a single value, so it's only
+        // sent when exactly one year is checked; multi-year selections are
+        // narrowed client-side below (yearsFilterFn) without touching the API.
+        return yearlyReportService.getAdminReports({
+          storeId: filters.storeId,
+          clientId: filters.clientId,
+          year: filters.years.length === 1 ? filters.years[0] : '',
+        })
+      }
       if (!selectedStoreId) return Promise.resolve([])
       return yearlyReportService.getClientReportsByStore(selectedStoreId)
     },
     {
       initialData: [],
-      deps: [filters.storeId, filters.clientId, filters.year, isAdmin, selectedStoreId],
+      deps: [filters.storeId, filters.clientId, filters.years, isAdmin, selectedStoreId],
       onError: (requestError) => {
         const details = handleServiceError(requestError)
         notify({ type: 'error', title: 'Yearly reports load failed', message: details.message })
@@ -152,6 +162,18 @@ function YearlyReportsPage() {
   const clientOptions = useMemo(
     () => (clientsQuery.data || []).map((c) => ({ label: c.fullName, value: String(c.clientId) })),
     [clientsQuery.data],
+  )
+
+  // Store owner lookup for the PDF export's Client/Store grouping — display only.
+  const storeMetaById = useMemo(
+    () =>
+      Object.fromEntries(
+        (storesQuery.data || []).map((s) => [
+          String(s.storeId),
+          { storeName: s.storeName, ownerName: s.clientName },
+        ]),
+      ),
+    [storesQuery.data],
   )
 
   const uniqueStores = useMemo(
@@ -189,11 +211,20 @@ function YearlyReportsPage() {
     return cols
   }, [visibleColumnDefs, isAdmin, openEditModal])
 
+  // Client reports are fetched per store without server-side year filters,
+  // and the admin API only narrows by a single year (see reportsQuery above),
+  // so multi-year selections are always applied locally for both roles.
+  const yearsFilterFn = useCallback(
+    (row) => filters.years.includes(Number(row.reportYear)),
+    [filters.years],
+  )
+
   const { page, totalItems, totalPages, pageItems, pageSize, setPage, setPageSize, filteredData } =
     useTable({
       data: reportsQuery.data || [],
       searchTerm,
       searchFields: SEARCH_FIELDS,
+      filterFn: filters.years.length ? yearsFilterFn : null,
       sortFn: sortByYear,
     })
 
@@ -210,7 +241,7 @@ function YearlyReportsPage() {
   }
 
   const resetFilters = () => {
-    setFilters({ storeId: '', clientId: '', year: '' })
+    setFilters({ storeId: '', clientId: '', years: [] })
     setSearchTerm('')
   }
 
@@ -219,7 +250,7 @@ function YearlyReportsPage() {
     setFormValues({
       ...initialFormValues,
       storeId: filters.storeId || selectedStoreId || '',
-      reportYear: filters.year || '',
+      reportYear: filters.years.length === 1 ? String(filters.years[0]) : '',
     })
     setFormErrors({})
     setIsModalOpen(true)
@@ -318,15 +349,23 @@ function YearlyReportsPage() {
     try {
       const exportCols = visibleColumnDefs.map((c) => ({ key: c.key, header: c.header }))
       const matrix = buildExportMatrix(exportCols, filteredData)
-      const filename = `yearly_reports_${filters.year || 'all'}`
+      const filename = `yearly_reports_${filters.years.length ? filters.years.join('-') : 'all'}`
       if (format === 'csv')   exportCsv(matrix, filename)
       if (format === 'excel') exportExcel(matrix, filename)
       if (format === 'pdf')
         await exportPdf({
           title: 'Yearly Reports',
-          subtitle: filters.year ? String(filters.year) : 'All years',
+          subtitle: filters.years.length
+            ? filters.years.length === 1
+              ? String(filters.years[0])
+              : `${filters.years.length} years selected`
+            : 'All years',
           matrix,
           chartContainer: null,
+          reportType: 'Yearly',
+          rows: filteredData,
+          columns: visibleColumnDefs,
+          storeMeta: storeMetaById,
         })
     } catch (err) {
       notify({ type: 'error', title: 'Export failed', message: err?.message || 'Could not generate export.' })
@@ -381,13 +420,15 @@ function YearlyReportsPage() {
           {/* Filter fields row */}
           <div className="yr-filter-bar__row">
             <div className="yr-filter-bar__field">
-              <SelectInput
+              <MultiSelectInput
                 label="Year"
-                name="year"
-                value={filters.year}
+                name="years"
+                values={filters.years}
                 onChange={handleFilterChange}
                 options={yearOptions}
                 placeholder="All years"
+                unitLabel="Year"
+                showChips
               />
             </div>
 
@@ -588,9 +629,11 @@ function YearlyReportsPage() {
             <span className="yr-stats-bar__label">Stores</span>
           </div>
         )}
-        {filters.year && (
+        {filters.years.length > 0 && (
           <div className="yr-stats-bar__item">
-            <span className="yr-stats-bar__value">{filters.year}</span>
+            <span className="yr-stats-bar__value">
+              {filters.years.length === 1 ? filters.years[0] : `${filters.years.length} years`}
+            </span>
             <span className="yr-stats-bar__label">Year filter</span>
           </div>
         )}

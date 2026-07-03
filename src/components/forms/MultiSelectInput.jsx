@@ -9,6 +9,9 @@ const MultiSelectInput = ({
   error,
   placeholder = 'Select options',
   searchable = true,
+  // Optional, opt-in only — existing callers are unaffected unless they pass these.
+  unitLabel,     // e.g. "Month" → summary reads "3 Months selected" instead of "3 selected"
+  showChips = false, // renders selected options as removable chips below the trigger
 }) => {
   const [isOpen, setIsOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -40,13 +43,11 @@ const MultiSelectInput = ({
     )
   }, [options, searchTerm])
 
-  const selectedLabels = useMemo(
-    () =>
-      options
-        .filter((option) => values.includes(option.value))
-        .map((option) => option.label),
+  const selectedOptions = useMemo(
+    () => options.filter((option) => values.includes(option.value)),
     [options, values],
   )
+  const selectedLabels = useMemo(() => selectedOptions.map((option) => option.label), [selectedOptions])
 
   const emitChange = (nextValues) => {
     onChange({ target: { name, value: nextValues } })
@@ -61,9 +62,11 @@ const MultiSelectInput = ({
   }
 
   const summary = selectedLabels.length
-    ? selectedLabels.length <= 2
-      ? selectedLabels.join(', ')
-      : `${selectedLabels.length} selected`
+    ? unitLabel
+      ? `${selectedLabels.length} ${unitLabel}${selectedLabels.length === 1 ? '' : 's'} selected`
+      : selectedLabels.length <= 2
+        ? selectedLabels.join(', ')
+        : `${selectedLabels.length} selected`
     : placeholder
 
   return (
@@ -83,6 +86,24 @@ const MultiSelectInput = ({
           {isOpen ? '▴' : '▾'}
         </span>
       </button>
+
+      {showChips && selectedOptions.length > 0 ? (
+        <div className="multi-select__chips">
+          {selectedOptions.map((option) => (
+            <span key={option.value} className="multi-select__chip">
+              <span className="multi-select__chip-label">{option.label}</span>
+              <button
+                type="button"
+                className="multi-select__chip-remove"
+                onClick={() => toggleValue(option.value)}
+                aria-label={`Remove ${option.label}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {isOpen ? (
         <div className="multi-select__panel" role="listbox" aria-multiselectable="true">
