@@ -1,5 +1,17 @@
 import { COMPARISON_MODES } from '../constants/comparisonConstants'
 
+const requireDateRange = (values, errors) => {
+  if (!values.fromDate) {
+    errors.fromDate = 'Select a start date'
+  }
+  if (!values.toDate) {
+    errors.toDate = 'Select an end date'
+  }
+  if (values.fromDate && values.toDate && values.fromDate > values.toDate) {
+    errors.toDate = 'End date must be on or after the start date'
+  }
+}
+
 export const validateComparisonForm = (values) => {
   const errors = {}
 
@@ -7,7 +19,10 @@ export const validateComparisonForm = (values) => {
     errors.storeId = 'Select a store'
   }
 
-  if (values.mode !== COMPARISON_MODES.METRIC && !values.metrics?.length) {
+  const isMetricMode =
+    values.mode === COMPARISON_MODES.METRIC || values.mode === COMPARISON_MODES.DAILY_METRIC
+
+  if (!isMetricMode && !values.metrics?.length) {
     errors.metrics = 'Select at least one metric'
   }
 
@@ -59,6 +74,32 @@ export const validateComparisonForm = (values) => {
       }
       if (!values.month) {
         errors.month = 'Select a month'
+      }
+      break
+
+    case COMPARISON_MODES.DAY_OVER_DAY:
+      requireDateRange(values, errors)
+      break
+
+    case COMPARISON_MODES.ONE_DAY_VS_RANGE:
+      requireDateRange(values, errors)
+      if (!values.referenceDate) {
+        errors.referenceDate = 'Select a reference day'
+      }
+      break
+
+    case COMPARISON_MODES.SELECTED_DAYS: {
+      requireDateRange(values, errors)
+      const selectedDays = values.comparisonDates || []
+      if (selectedDays.length < 2) {
+        errors.comparisonDates = 'Select at least two days to compare sequentially'
+      }
+      break
+    }
+
+    case COMPARISON_MODES.DAILY_METRIC:
+      if (!values.date) {
+        errors.date = 'Select a day'
       }
       break
 

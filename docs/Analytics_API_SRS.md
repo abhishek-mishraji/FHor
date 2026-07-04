@@ -124,7 +124,7 @@ The client controller extracts `clientId` from JWT, fetches their store mappings
 | `groupBy` | `string` | ✅ | — | `DATE`, `MONTH`, `QUARTER`, `YEAR`, `STORE`, `DEPARTMENT` |
 | `metric` | `List<string>` | ✅ | — | One or more metric names to aggregate |
 | `aggregate` | `string` | ❌ | `SUM` | `SUM`, `AVG`, `MAX`, `MIN` |
-| `storeIds` | `List<Long>` | ❌ | — | Admin only — filter by stores. Pass multiple as `storeIds=1&storeIds=2` |
+| `storeIds` | `List<Long>` | ❌ | — | Filter by stores. Pass multiple as `storeIds=1&storeIds=2`. On the client endpoint, must be a subset of the client's own stores |
 | `clientId` | `Long` | ❌ | — | Admin only — auto-resolves to client's stores |
 | `from` | `date` | ❌ | — | Daily only — start date `YYYY-MM-DD` |
 | `to` | `date` | ❌ | — | Daily only — end date `YYYY-MM-DD` |
@@ -132,7 +132,7 @@ The client controller extracts `clientId` from JWT, fetches their store mappings
 | `year` | `List<integer>` | ❌ | — | Monthly only — one or many years. Pass as `year=2025&year=2026` |
 | `departmentId` | `string` | ❌ | — | Monthly only — filter by department e.g. `A1` |
 
-> **CLIENT endpoint:** `storeIds` and `clientId` params are **ignored**. Store access is resolved automatically from the JWT.
+> **CLIENT endpoint:** `clientId` is **ignored** — the client identity always comes from the JWT. `storeIds` may be passed to narrow the query to a subset of the client's own stores; any requested store outside the client's mappings returns `403`. When omitted, all of the client's stores are included.
 
 ### 3.3 Response Envelope
 
@@ -298,9 +298,16 @@ GET /api/v1/client/analytics/reports
 
 ### Store Resolution Logic
 
-- `storeIds` and `clientId` params are **silently ignored**
-- `clientId` is extracted from JWT
-- Store IDs resolved via `CLIENT_STORE_MAPPING` for that client
+- `clientId` param is **silently ignored** — always extracted from JWT
+- Store IDs the client may access are resolved via `CLIENT_STORE_MAPPING` for that client
+- `storeIds` param (optional) narrows the query to a subset of those stores:
+
+| `storeIds` provided | Behavior |
+|---|---|
+| No | Aggregates across **all** of the client's mapped stores |
+| Yes — all within client's mappings | Queries only the requested stores |
+| Yes — any outside client's mappings | Returns `403` — `"Access denied to one or more requested stores"` |
+
 - If client has no store mappings → returns empty datasets, not an error
 
 ### Request Example
@@ -316,7 +323,7 @@ GET /api/v1/client/analytics/reports
     &aggregate=SUM
 ```
 
-> No `storeIds` needed — resolved from JWT automatically.
+> No `storeIds` needed — all of the client's stores are included automatically. Add `storeIds=1` to narrow to a single store.
 
 ### Success Response — `200 OK`
 
@@ -769,6 +776,7 @@ All errors use the standard `ApiResponse` envelope with `"success": false`.
 | `400` | `month` out of range | `"month must be between 1 and 12"` |
 | `401` | Missing or invalid JWT | `"Authentication required"` |
 | `403` | Wrong role | `"Access denied"` |
+| `403` | Client requests a store outside their mappings | `"Access denied to one or more requested stores"` |
 | `404` | `clientId` not found (admin resolving client stores) | `"Client not found"` |
 
 ---
@@ -810,7 +818,7 @@ For high-traffic analytics, consider:
 
 | Concern | Mitigation |
 |---|---|
-| Client accessing other stores | Client endpoint ignores `storeIds` param; resolves from JWT only |
+| Client accessing other stores | Client endpoint validates requested `storeIds` against the client's own `CLIENT_STORE_MAPPING` (from JWT); any store outside it returns `403` |
 | SQL injection via metric param | Metric names validated against a whitelist before use in Criteria API — never concatenated as raw SQL |
 | Admin using `clientId` to access data | `clientId` must exist in DB; resolved to storeIds — no direct data bypass |
 | Large date ranges causing DoS | Recommend max 365-day `from/to` range; can be enforced in validation |

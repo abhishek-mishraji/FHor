@@ -58,6 +58,26 @@ export const formatSignedCurrency = (value, currency = 'USD') => {
   return amount > 0 ? `+${formatted}` : amount < 0 ? `-${formatted}` : formatted
 }
 
+// Always-signed plain number for count-metric deltas: +12 / -5. Zero is
+// rendered unsigned; non-numeric input renders a dash.
+export const formatSignedNumber = (value, maximumFractionDigits = 2) => {
+  if (value === null || value === undefined || value === '') {
+    return '-'
+  }
+
+  const amount = Number(value)
+
+  if (Number.isNaN(amount)) {
+    return '-'
+  }
+
+  const formatted = new Intl.NumberFormat('en-US', {
+    maximumFractionDigits,
+  }).format(Math.abs(amount))
+
+  return amount > 0 ? `+${formatted}` : amount < 0 ? `-${formatted}` : formatted
+}
+
 // Signed percentage with two decimals: +15.23% / -4.82% / 0.00%.
 export const formatSignedPercent = (value) => {
   if (value === null || value === undefined || value === '') {

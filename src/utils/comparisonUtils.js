@@ -1,6 +1,12 @@
-import { COMPARISON_MODES, METRIC_POLARITY } from '../constants/comparisonConstants'
+import { COMPARISON_MODES, COUNT_METRICS, METRIC_POLARITY } from '../constants/comparisonConstants'
 import { getMonthOptions } from './dateUtils'
-import { formatCurrency, formatSignedCurrency, formatSignedPercent } from './numberUtils'
+import {
+  formatCurrency,
+  formatNumber,
+  formatSignedCurrency,
+  formatSignedNumber,
+  formatSignedPercent,
+} from './numberUtils'
 
 const monthOptions = getMonthOptions()
 
@@ -83,10 +89,23 @@ const STATUS_STYLE_BY_MODE = {
   [COMPARISON_MODES.ONE_VS_MANY]: 'status',
   [COMPARISON_MODES.DEPARTMENT]: 'status',
   [COMPARISON_MODES.YEAR_OVER_YEAR]: null,
+  [COMPARISON_MODES.DAY_OVER_DAY]: 'trend',
+  [COMPARISON_MODES.SELECTED_DAYS]: 'trend',
+  [COMPARISON_MODES.DAILY_METRIC]: 'trend',
+  [COMPARISON_MODES.ONE_DAY_VS_RANGE]: 'status',
 }
 
-const formatValueCell = (value) =>
-  value === null || value === undefined ? '-' : formatCurrency(value)
+// Count metrics (volume, no-sales, line voids) are plain quantities; everything
+// else is money. Used by the table, the summary table, and the export cards.
+export const formatMetricValue = (metric, value) =>
+  value === null || value === undefined
+    ? '-'
+    : COUNT_METRICS.has(metric)
+      ? formatNumber(value)
+      : formatCurrency(value)
+
+const formatSignedMetricValue = (metric, value) =>
+  COUNT_METRICS.has(metric) ? formatSignedNumber(value) : formatSignedCurrency(value)
 
 // Column groups visible after the ColumnSelector's per-metric filter.
 // Non-metric groups (year columns, delta, value) are always visible.
@@ -135,7 +154,7 @@ export const buildComparisonColumns = (result, prefs) => {
         sortable: true,
         width: 140,
         accessor: (row) => cellOf(row)?.current ?? null,
-        render: (row) => formatValueCell(cellOf(row)?.current),
+        render: (row) => formatMetricValue(toneMetricOf(row), cellOf(row)?.current),
       })
       return
     }
@@ -152,14 +171,14 @@ export const buildComparisonColumns = (result, prefs) => {
         sortable: true,
         width: 140,
         accessor: (row) => cellOf(row)?.current ?? null,
-        render: (row) => formatValueCell(cellOf(row)?.current),
+        render: (row) => formatMetricValue(toneMetricOf(row), cellOf(row)?.current),
       })
     }
 
-    if (result.mode === COMPARISON_MODES.METRIC) {
+    if (result.mode === COMPARISON_MODES.METRIC || result.mode === COMPARISON_MODES.DAILY_METRIC) {
       columns.push({
         key: 'shareOfGross',
-        header: '% of Gross',
+        header: result.shareHeader || '% of Gross',
         group: groupTag,
         align: 'right',
         sortable: true,
@@ -181,7 +200,7 @@ export const buildComparisonColumns = (result, prefs) => {
         sortable: true,
         width: 140,
         accessor: (row) => cellOf(row)?.previous ?? null,
-        render: (row) => formatValueCell(cellOf(row)?.previous),
+        render: (row) => formatMetricValue(toneMetricOf(row), cellOf(row)?.previous),
         cellTitle: (row) => (row.previousRef ? `From ${row.previousRef}` : null),
       })
     }
@@ -195,7 +214,7 @@ export const buildComparisonColumns = (result, prefs) => {
         sortable: true,
         width: 130,
         accessor: (row) => cellOf(row)?.difference ?? null,
-        render: (row) => formatSignedCurrency(cellOf(row)?.difference),
+        render: (row) => formatSignedMetricValue(toneMetricOf(row), cellOf(row)?.difference),
         tone: deltaTone,
       })
     }

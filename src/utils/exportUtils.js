@@ -307,6 +307,7 @@ const buildGroupedSectionsHtml = ({ rows, columns, reportType, storeMeta, export
 export const exportPdf = async ({
   title,
   subtitle,
+  storeName,
   matrix,
   chartContainer,
   reportType,
@@ -342,6 +343,7 @@ export const exportPdf = async ({
         <span><b>Total Records:</b> ${recordCount}</span>
       </div>`
     : `<div class="meta-grid">
+        ${storeName ? `<span class="meta-label">Store</span>    <span class="meta-value">${escapeHtml(storeName)}</span>` : ''}
         <span class="meta-label">Period</span>   <span class="meta-value">${escapeHtml(subtitle)}</span>
         <span class="meta-label">Exported</span> <span class="meta-value">${escapeHtml(exportDateTime)}</span>
         <span class="meta-label">Records</span>  <span class="meta-value">${recordCount}</span>

@@ -11,14 +11,17 @@ import {
   buildDefaultFilters,
   COMPARISON_MODES,
   DEFAULT_COLUMN_PREFS,
+  DEFAULT_METRICS_BY_REPORT_TYPE,
+  DEFAULT_MODE_BY_REPORT_TYPE,
+  REPORT_TYPES,
 } from '../../constants/comparisonConstants'
 import {
   buildComparisonColumns,
   computeSummary,
+  formatMetricValue,
   getVisibleColumnGroups,
 } from '../../utils/comparisonUtils'
 import { buildExportMatrix, exportCsv, exportExcel, exportPdf } from '../../utils/exportUtils'
-import { formatCurrency } from '../../utils/numberUtils'
 import { validateComparisonForm } from '../../validations/comparisonValidation'
 import ColumnSelector from './components/ColumnSelector'
 import ComparisonTable from './components/ComparisonTable'
@@ -82,10 +85,11 @@ const AnalyticsPage = () => {
   }, [isAdmin, filters, storeOptions])
 
   // There is no departments endpoint: department names are discovered from
-  // the monthly reports of the selected store.
+  // the monthly reports of the selected store. Daily reports have no
+  // departments, so the lookup is skipped entirely for them.
   const departmentsQuery = useApi(
     async ({ signal }) => {
-      if (!effectiveFilters.storeId) {
+      if (!effectiveFilters.storeId || effectiveFilters.reportType === REPORT_TYPES.DAILY) {
         return []
       }
 
@@ -124,6 +128,22 @@ const AnalyticsPage = () => {
 
   const handleChange = (event) => {
     const { name, value } = event.target
+
+    // Switching report type swaps the whole mode/metric vocabulary, so both
+    // reset to that type's defaults; store and aggregate carry over.
+    if (name === 'reportType') {
+      setFilters((previous) => ({
+        ...previous,
+        reportType: value,
+        mode: DEFAULT_MODE_BY_REPORT_TYPE[value],
+        metrics: DEFAULT_METRICS_BY_REPORT_TYPE[value],
+        departmentId: '',
+        comparisonDates: [],
+      }))
+      setErrors({})
+      return
+    }
+
     const nextValue = NUMERIC_FIELDS.has(name)
       ? value === ''
         ? ''
@@ -202,12 +222,11 @@ const AnalyticsPage = () => {
 
           return SUMMARY_CARD_ROWS.map((row) => ({
             label: `${row.label} — ${group.label}`,
-            value:
-              summary.current[row.key] === null ? '-' : formatCurrency(summary.current[row.key]),
+            value: formatMetricValue(group.metric, summary.current[row.key]),
             caption:
               summary.previous[row.key] === null
                 ? undefined
-                : `${result.previousHeader || 'Previous'}: ${formatCurrency(summary.previous[row.key])}`,
+                : `${result.previousHeader || 'Previous'}: ${formatMetricValue(group.metric, summary.previous[row.key])}`,
           }))
         })
       : undefined
@@ -224,6 +243,9 @@ const AnalyticsPage = () => {
       const matrix = buildExportMatrix(columns, rowsForExport)
       const summaryCards = buildSummaryCards()
       const filename = `analytics-comparison-${result.mode.toLowerCase().replaceAll('_', '-')}-${new Date().toISOString().slice(0, 10)}`
+      const storeName = storeOptions.find((option) => option.value === String(lastRun?.storeId))?.label
+      const exportTitle =
+        lastRun?.reportType === REPORT_TYPES.DAILY ? 'Daily Comparison' : 'Monthly Comparison'
 
       if (format === 'csv') {
         exportCsv(matrix, filename)
@@ -231,8 +253,9 @@ const AnalyticsPage = () => {
         exportExcel(matrix, filename, { summaryCards })
       } else {
         await exportPdf({
-          title: 'Monthly Comparison',
+          title: exportTitle,
           subtitle: result.title,
+          storeName,
           matrix,
           summaryCards,
         })
@@ -256,14 +279,16 @@ const AnalyticsPage = () => {
 
   const showResults = Boolean(result) || comparisonQuery.loading || Boolean(comparisonQuery.error)
   const showMetricSection =
-    result?.mode !== COMPARISON_MODES.METRIC && result?.mode !== COMPARISON_MODES.YEAR_OVER_YEAR
+    result?.mode !== COMPARISON_MODES.METRIC &&
+    result?.mode !== COMPARISON_MODES.YEAR_OVER_YEAR &&
+    result?.mode !== COMPARISON_MODES.DAILY_METRIC
 
   return (
     <div className="analytics">
       <PageHeader
         eyebrow="Analytics"
-        title="Monthly Comparison"
-        description="Compare sales performance across months, years, departments, and metrics."
+        title="Report Comparison"
+        description="Compare sales performance across days, months, years, departments, and metrics."
       />
 
       <ComparisonToolbar

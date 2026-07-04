@@ -1,20 +1,31 @@
 import { memo } from 'react'
 import MultiSelectInput from '../../../components/forms/MultiSelectInput'
-import { MONTHLY_METRICS } from '../../../constants/comparisonConstants'
+import {
+  DAILY_METRICS,
+  MONTHLY_METRICS,
+  REPORT_TYPES,
+} from '../../../constants/comparisonConstants'
 
-const METRIC_OPTIONS = MONTHLY_METRICS.map((metric) => ({
-  label: metric.label,
-  value: metric.key,
-}))
+const toOptions = (metrics) => metrics.map((metric) => ({ label: metric.label, value: metric.key }))
 
-const MetricSelector = memo(function MetricSelector({ values, onChange, error }) {
+const METRIC_OPTIONS_BY_REPORT_TYPE = {
+  [REPORT_TYPES.MONTHLY]: toOptions(MONTHLY_METRICS),
+  [REPORT_TYPES.DAILY]: toOptions(DAILY_METRICS),
+}
+
+const MetricSelector = memo(function MetricSelector({
+  reportType = REPORT_TYPES.MONTHLY,
+  values,
+  onChange,
+  error,
+}) {
   return (
     <MultiSelectInput
       label="Metrics"
       name="metrics"
       values={values}
       onChange={onChange}
-      options={METRIC_OPTIONS}
+      options={METRIC_OPTIONS_BY_REPORT_TYPE[reportType] || METRIC_OPTIONS_BY_REPORT_TYPE.MONTHLY}
       error={error}
       placeholder="Select metrics"
       searchable={false}

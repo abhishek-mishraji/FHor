@@ -1,7 +1,6 @@
 import { Fragment, memo, useMemo } from 'react'
 import { AGGREGATES } from '../../../constants/comparisonConstants'
-import { computeSummary } from '../../../utils/comparisonUtils'
-import { formatCurrency } from '../../../utils/numberUtils'
+import { computeSummary, formatMetricValue } from '../../../utils/comparisonUtils'
 
 const SUMMARY_ROWS = [
   { key: 'sum', label: 'SUM', aggregate: AGGREGATES.SUM },
@@ -9,8 +8,6 @@ const SUMMARY_ROWS = [
   { key: 'min', label: 'MINIMUM', aggregate: AGGREGATES.MIN },
   { key: 'max', label: 'MAXIMUM', aggregate: AGGREGATES.MAX },
 ]
-
-const formatSummaryValue = (value) => (value === null ? '-' : formatCurrency(value))
 
 // SUM / AVERAGE / MINIMUM / MAXIMUM of the Current and Previous columns for
 // every visible metric group, computed client-side from the comparison rows.
@@ -70,8 +67,8 @@ const SummaryTable = memo(function SummaryTable({ result, visibleGroups, aggrega
                 </th>
                 {summaries.map(({ group, summary }) => (
                   <Fragment key={group.key}>
-                    <td>{formatSummaryValue(summary.current[row.key])}</td>
-                    <td>{formatSummaryValue(summary.previous[row.key])}</td>
+                    <td>{formatMetricValue(group.metric, summary.current[row.key])}</td>
+                    <td>{formatMetricValue(group.metric, summary.previous[row.key])}</td>
                   </Fragment>
                 ))}
               </tr>

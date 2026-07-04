@@ -1,4 +1,5 @@
 import {
+  ALL_DAILY_METRIC_KEYS,
   ALL_METRIC_KEYS,
   COMPARISON_MODES,
   METRIC_LABELS,
@@ -11,6 +12,7 @@ import {
   parseMonthLabel,
   previousMonthOf,
 } from '../utils/comparisonUtils'
+import { formatIsoDate, previousDayOf } from '../utils/dateUtils'
 
 const toNumber = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -356,6 +358,183 @@ const composeMetricComparison = async (values, fetcher, isAdmin) => {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Daily composers. The API only supports groupBy=DATE for daily reports, so
+// every daily mode is composed from one from/to range fetch whose labels are
+// ISO dates ("2026-06-05").
+// ---------------------------------------------------------------------------
+
+const buildDailyParams = (values, metrics, extra = {}) => ({
+  reportType: 'DAILY',
+  groupBy: 'DATE',
+  aggregate: values.aggregate || 'SUM',
+  metric: metrics,
+  ...(values.storeId ? { storeIds: [values.storeId] } : {}),
+  ...extra,
+})
+
+// [{ date: 'YYYY-MM-DD', values: { metricKey: number|null } }], chronological.
+// Only days with data appear — the API does not zero-fill.
+const buildDayBuckets = (response) => {
+  const { labels, byMetric } = indexResponse(response)
+
+  return labels
+    .map((label, index) => ({
+      date: String(label).slice(0, 10),
+      values: Object.fromEntries(
+        [...byMetric].map(([metric, data]) => [metric, toNumber(data[index])]),
+      ),
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+}
+
+const composeDayOverDay = async (values, fetcher) => {
+  const metrics = values.metrics
+  const response = await fetcher(
+    buildDailyParams(values, metrics, { from: values.fromDate, to: values.toDate }),
+  )
+  const buckets = buildDayBuckets(response)
+
+  return {
+    mode: values.mode,
+    rowDimension: 'Day',
+    columnGroups: metricColumnGroups(metrics),
+    currentHeader: 'Current',
+    previousHeader: 'Previous',
+    summaryEnabled: true,
+    title: `Day over Day — ${formatIsoDate(values.fromDate)} to ${formatIsoDate(values.toDate)}`,
+    rows: buckets.map((bucket, index) => {
+      const previousBucket = buckets[index - 1] || null
+
+      return {
+        id: bucket.date,
+        label: formatIsoDate(bucket.date),
+        previousRef: previousBucket ? formatIsoDate(previousBucket.date) : null,
+        toneMetric: null,
+        cells: buildCells(metrics, bucket.values, previousBucket?.values),
+      }
+    }),
+  }
+}
+
+const composeOneDayVsRange = async (values, fetcher) => {
+  const metrics = values.metrics
+  const reference = values.referenceDate
+  // One fetch covering both the display range and the reference day (ISO
+  // dates compare correctly as strings).
+  const from = reference < values.fromDate ? reference : values.fromDate
+  const to = reference > values.toDate ? reference : values.toDate
+  const response = await fetcher(buildDailyParams(values, metrics, { from, to }))
+  const buckets = buildDayBuckets(response)
+  const referenceValues = buckets.find((bucket) => bucket.date === reference)?.values
+
+  const days = buckets.filter(
+    (bucket) =>
+      bucket.date !== reference && bucket.date >= values.fromDate && bucket.date <= values.toDate,
+  )
+
+  return {
+    mode: values.mode,
+    rowDimension: 'Day',
+    columnGroups: metricColumnGroups(metrics),
+    currentHeader: 'Current',
+    previousHeader: `Reference (${formatIsoDate(reference)})`,
+    summaryEnabled: true,
+    title: `Days vs ${formatIsoDate(reference)}`,
+    rows: days.map((bucket) => ({
+      id: bucket.date,
+      label: formatIsoDate(bucket.date),
+      previousRef: formatIsoDate(reference),
+      toneMetric: null,
+      cells: buildCells(metrics, bucket.values, referenceValues),
+    })),
+  }
+}
+
+const composeSelectedDays = async (values, fetcher) => {
+  const metrics = values.metrics
+  const days = [...(values.comparisonDates || [])].sort()
+  const response = await fetcher(
+    buildDailyParams(values, metrics, { from: days[0], to: days[days.length - 1] }),
+  )
+  const bucketByDate = new Map(buildDayBuckets(response).map((bucket) => [bucket.date, bucket]))
+
+  return {
+    mode: values.mode,
+    rowDimension: 'Day',
+    columnGroups: metricColumnGroups(metrics),
+    currentHeader: 'Current',
+    previousHeader: 'Compared With',
+    summaryEnabled: true,
+    title: 'Selected Days (Sequential)',
+    rows: days.map((day, index) => {
+      const previousDay = index > 0 ? days[index - 1] : null
+
+      return {
+        id: day,
+        label: formatIsoDate(day),
+        previousRef: previousDay ? formatIsoDate(previousDay) : null,
+        toneMetric: null,
+        cells: buildCells(
+          metrics,
+          bucketByDate.get(day)?.values,
+          previousDay ? bucketByDate.get(previousDay)?.values : undefined,
+        ),
+      }
+    }),
+  }
+}
+
+// All nine daily metrics of one day vs the previous day. Share column uses
+// Grocery Total as the base (the daily analogue of Gross). Summary is off:
+// counts and currency amounts cannot be meaningfully summed together.
+const composeDailyMetricComparison = async (values, fetcher) => {
+  const day = values.date
+  const previousDay = previousDayOf(day)
+  const response = await fetcher(
+    buildDailyParams(values, ALL_DAILY_METRIC_KEYS, { from: previousDay, to: day }),
+  )
+  const bucketByDate = new Map(buildDayBuckets(response).map((bucket) => [bucket.date, bucket]))
+
+  const currentValues = bucketByDate.get(day)?.values || {}
+  const previousValues = bucketByDate.get(previousDay)?.values || {}
+  const groceryCurrent = currentValues.groceryTotal ?? null
+
+  return {
+    mode: values.mode,
+    rowDimension: 'Metric',
+    columnGroups: [{ key: 'value', label: 'Value', kind: 'delta' }],
+    currentHeader: formatIsoDate(day),
+    previousHeader: formatIsoDate(previousDay),
+    summaryEnabled: false,
+    shareHeader: '% of Grocery Total',
+    title: `Daily Metrics — ${formatIsoDate(day)} vs ${formatIsoDate(previousDay)}`,
+    rows: ALL_DAILY_METRIC_KEYS.map((metric) => {
+      const current = currentValues[metric] ?? null
+      const previousValue = previousValues[metric] ?? null
+
+      return {
+        id: metric,
+        label: METRIC_LABELS[metric] || metric,
+        previousRef: formatIsoDate(previousDay),
+        toneMetric: metric,
+        shareOfGross:
+          current === null || groceryCurrent === null || groceryCurrent === 0
+            ? null
+            : (current / groceryCurrent) * 100,
+        cells: {
+          value: {
+            current,
+            previous: previousValue,
+            difference: computeDifference(current, previousValue),
+            pctDifference: computePctDifference(current, previousValue),
+          },
+        },
+      }
+    }),
+  }
+}
+
 const COMPOSERS = {
   [COMPARISON_MODES.MONTH_OVER_MONTH]: composeMonthOverMonth,
   [COMPARISON_MODES.ONE_VS_MANY]: composeOneVsMany,
@@ -363,6 +542,10 @@ const COMPOSERS = {
   [COMPARISON_MODES.YEAR_OVER_YEAR]: composeYearOverYear,
   [COMPARISON_MODES.DEPARTMENT]: composeDepartment,
   [COMPARISON_MODES.METRIC]: composeMetricComparison,
+  [COMPARISON_MODES.DAY_OVER_DAY]: composeDayOverDay,
+  [COMPARISON_MODES.ONE_DAY_VS_RANGE]: composeOneDayVsRange,
+  [COMPARISON_MODES.SELECTED_DAYS]: composeSelectedDays,
+  [COMPARISON_MODES.DAILY_METRIC]: composeDailyMetricComparison,
 }
 
 export const composeComparison = async (values, fetcher, isAdmin, options = {}) => {

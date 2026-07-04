@@ -1,11 +1,20 @@
-import { memo } from 'react'
+import { memo, useMemo } from 'react'
 import SelectInput from '../../../components/forms/SelectInput'
-import { COMPARISON_MODE_OPTIONS } from '../../../constants/comparisonConstants'
+import { COMPARISON_MODE_OPTIONS, REPORT_TYPES } from '../../../constants/comparisonConstants'
 
 // Comparison mode dropdown with the mockup's "About this comparison" hint
-// shown for the active mode.
-const ComparisonTypeSelector = memo(function ComparisonTypeSelector({ value, onChange, error }) {
-  const activeOption = COMPARISON_MODE_OPTIONS.find((option) => option.value === value)
+// shown for the active mode. Modes are scoped to the active report type.
+const ComparisonTypeSelector = memo(function ComparisonTypeSelector({
+  reportType = REPORT_TYPES.MONTHLY,
+  value,
+  onChange,
+  error,
+}) {
+  const options = useMemo(
+    () => COMPARISON_MODE_OPTIONS.filter((option) => option.reportType === reportType),
+    [reportType],
+  )
+  const activeOption = options.find((option) => option.value === value)
 
   return (
     <div className="comparison-type-selector">
@@ -14,7 +23,7 @@ const ComparisonTypeSelector = memo(function ComparisonTypeSelector({ value, onC
         name="mode"
         value={value}
         onChange={onChange}
-        options={COMPARISON_MODE_OPTIONS}
+        options={options}
         error={error}
         placeholder="Select comparison type"
       />
