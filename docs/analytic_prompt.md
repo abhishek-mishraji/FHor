@@ -1,568 +1,719 @@
-# Enterprise Analytics Dashboard Integration Prompt
+# Hands Of Retail - Analytics Module Redesign (Monthly Comparison V1)
 
-## Role
+## AI ROLE
 
-You are a Principal Frontend Architect, Senior React Engineer, UX Designer, Data Visualization Expert, and Analytics Platform Engineer.
+You are an elite Staff Software Engineer, Principal React Architect, Senior UI/UX Designer, Enterprise SaaS Architect, Product Designer, and Business Intelligence (BI) Dashboard Expert with more than 15 years of experience building enterprise analytics platforms.
 
-I am providing:
+You have designed products similar to:
 
-1. Existing React Codebase
-2. Analytics API SRS
-3. Backend API SRS
-4. Database Schema
-
-Your task is to integrate a complete enterprise-grade Analytics Platform into the existing application.
-
-### Important Rules
-
-- DO NOT create a new project.
-- DO NOT replace existing architecture.
-- DO NOT ignore existing reusable components.
-- Follow existing project conventions.
-- Reuse existing components whenever possible.
-- Prefer extension over replacement.
-
----
-
-# Phase 1: Architecture Analysis (Mandatory)
-
-Before writing any code:
-
-Analyze the entire codebase and provide:
-
-## Architecture Analysis
-
-Explain:
-
-- Project structure
-- Existing pages
-- Existing reusable components
-- Existing table components
-- Existing chart components
-- Existing form components
-- Existing API services
-- Existing Axios setup
-- Existing authentication flow
-- Existing React Query usage
-- Existing Context Providers
-- Existing styling architecture
-
----
-
-# Reuse Requirements
-
-If existing project already contains:
-
-- Table
-- Card
-- Modal
-- Select
-- Multi Select
-- Date Picker
-- Pagination
-- Search Components
-- Loader
-- Export Components
-- Chart Components
-
-Reuse them.
-
-Never create duplicates.
-
----
-
-# Analytics Platform Goal
-
-Build an analytics experience comparable to:
-
+- Microsoft Power BI
 - Tableau
-- Power BI
+- SAP Analytics Cloud
+- Oracle Analytics
+- IBM Cognos
+- Looker
 - Metabase
-- Looker Studio
+- Salesforce CRM Analytics
+- Amazon QuickSight
 
-using the provided Analytics APIs.
+You are also an expert in:
 
-The frontend must support every valid combination supported by the backend.
+- Enterprise React Architecture
+- TypeScript
+- Component Design
+- Business Intelligence
+- Retail Analytics
+- Financial Reporting
+- UX Research
+- Data Grid Design
+- Enterprise Table Design
+- Scalable Frontend Architecture
+- Information Architecture
+- Human Computer Interaction
+- Performance Optimization
+- Clean Code
+- SOLID Principles
 
-No hardcoded reports.
+You never build beginner-level CRUD pages.
 
-No hardcoded dashboards.
+You always think like:
 
-No hardcoded chart definitions.
+- CEO
+- Regional Manager
+- Store Manager
+- Financial Analyst
+- Accountant
+- Retail Operations Team
 
-Everything must be dynamic and configuration driven.
+Every design decision must help users answer business questions quickly.
 
----
-
-# Route
-
-Create analytics module under:
-
-/analytics
-
----
-
-# Analytics Builder
-
-Create a dynamic report builder.
-
-Users can build any report supported by backend.
-
----
-
-## Report Type
-
-Dropdown:
-
-- DAILY
-- MONTHLY
+If you identify a better UX than my suggestion, explain why and implement the better solution while keeping backend compatibility.
 
 ---
 
-## Group By
+# PROJECT OBJECTIVE
 
-### DAILY
+Completely remove the existing Analytics module.
 
-- DATE
-- STORE
+Do NOT reuse the existing Analytics pages.
 
-### MONTHLY
+Delete:
 
-- MONTH
-- YEAR
-- STORE
-- DEPARTMENT
+- Analytics pages
+- Analytics components
+- Analytics CSS
+- Analytics hooks
+- Analytics services
+- Analytics utilities
+- Analytics routes
+- Dead code
+
+Rebuild the Analytics module completely from scratch.
+
+Keep only:
+
+- Authentication
+- Existing Layout
+- Sidebar
+- Routing
+- Theme
+- Shared Components (only if reusable)
+
+Everything else should be redesigned.
 
 ---
 
-## Aggregate
+# BACKEND
 
-Dropdown:
+I will provide:
+
+- Analytics_API_SRS.md
+- Backend_API_SRS.md
+
+You MUST follow those APIs exactly.
+
+Do NOT modify backend contracts.
+
+Do NOT assume missing endpoints.
+
+Do NOT invent APIs.
+
+The backend already supports:
+
+- Dynamic metrics
+- Dynamic grouping
+- SUM
+- AVG
+- MIN
+- MAX
+- Multiple years
+- Department grouping
+- Monthly reports
+- Dynamic datasets
+
+Use those capabilities exactly as designed. The analytics endpoint supports configurable grouping, metrics, aggregation, and returns a generic `labels[]` + `datasets[]` response suitable for frontend transformation.
+
+---
+
+# VERSION 1 SCOPE
+
+Only Monthly Analytics.
+
+NO Daily Analytics.
+
+NO Yearly Analytics page.
+
+NO Charts.
+
+NO Graphs.
+
+NO KPI Cards.
+
+NO Dashboard Cards.
+
+NO Pie Charts.
+
+NO Line Charts.
+
+NO Bar Charts.
+
+NO Heatmaps.
+
+NO Sparklines.
+
+Everything should be Table Based.
+
+Think of this module as an Enterprise Financial Report instead of a Dashboard.
+
+---
+
+# BUSINESS GOAL
+
+The Analytics page should answer questions such as:
+
+Which month performed better?
+
+How much did Net Sales increase?
+
+What is the percentage difference?
+
+Which department dropped?
+
+Which department improved?
+
+Which month has the highest value?
+
+Which month has the lowest value?
+
+What is the average?
+
+What is the maximum?
+
+What is the minimum?
+
+What is the total?
+
+Every answer should be understandable directly from tables.
+
+---
+
+# UI DESIGN PHILOSOPHY
+
+The interface must feel like enterprise software.
+
+Use inspiration from:
+
+- SAP
+- Oracle ERP
+- Microsoft Dynamics
+- Banking Systems
+- Financial Reporting Software
+
+Avoid:
+
+- Fancy animations
+- Oversized cards
+- Colorful dashboards
+- Template-style admin panels
+- Toy-like interfaces
+
+Focus on:
+
+- Readability
+- Information Density
+- Professional Typography
+- Consistent Spacing
+- Clean White Space
+- Excellent UX
+
+---
+
+# ANALYTICS PAGE STRUCTURE
+
+Analytics
+
+↓
+
+Sticky Filter Toolbar
+
+↓
+
+Comparison Type
+
+↓
+
+Dynamic Table
+
+↓
+
+Summary Table
+
+↓
+
+Export
+
+No other sections are required in V1.
+
+---
+
+# FILTER TOOLBAR
+
+The filter bar should stay visible while scrolling.
+
+Include:
+
+Store
+
+Comparison Type
+
+Current Month
+
+Comparison Month
+
+Year
+
+Department
+
+Aggregation
+
+Metrics
+
+Buttons:
+
+Compare
+
+Reset
+
+Export
+
+Save View (disabled placeholder)
+
+---
+
+# STORE
+
+Single Store only.
+
+Do NOT support multiple store comparison.
+
+---
+
+# COMPARISON TYPES
+
+Implement these comparison modes.
+
+## 1. Month over Month (Sequential)
+
+Each month compares with its previous month.
+
+Example:
+
+Jan
+
+Feb vs Jan
+
+Mar vs Feb
+
+Apr vs Mar
+
+Table:
+
+Month
+
+Current
+
+Previous
+
+Difference
+
+% Difference
+
+Trend
+
+---
+
+## 2. One Month vs Many Months
+
+Reference Month:
+
+June
+
+Compare against:
+
+All Months
+
+OR
+
+Selected Months
+
+Table:
+
+Month
+
+Current
+
+Reference
+
+Difference
+
+% Difference
+
+---
+
+## 3. Selected Months (Sequential)
+
+Example:
+
+User selects:
+
+March
+
+April
+
+May
+
+June
+
+Results:
+
+March
+
+April vs March
+
+May vs April
+
+June vs May
+
+---
+
+## 4. Year over Year
+
+Example:
+
+June 2024
+
+June 2025
+
+June 2026
+
+Table:
+
+Year
+
+Current
+
+Difference
+
+% Difference
+
+---
+
+## 5. Department Comparison
+
+One Month
+
+All Departments
+
+Table:
+
+Department
+
+Current
+
+Previous
+
+Difference
+
+% Difference
+
+---
+
+## 6. Metric Comparison
+
+Compare metrics within one month.
+
+Example:
+
+Gross
+
+Discount
+
+Promotion
+
+Refund
+
+Void Amount
+
+Net Sales
+
+Table:
+
+Metric
+
+Previous
+
+Current
+
+Difference
+
+% Difference
+
+---
+
+# DYNAMIC COLUMN SELECTION
+
+Allow users to choose visible columns.
+
+Example:
+
+☑ Gross
+
+☑ Discount
+
+☑ Promotion
+
+☑ Refund
+
+☑ Void Amount
+
+☑ Net Sales
+
+☑ Difference
+
+☑ % Difference
+
+Only selected columns should appear.
+
+The table must rebuild dynamically.
+
+---
+
+# TABLE FEATURES
+
+Build one reusable enterprise table component.
+
+Every table must support:
+
+Sticky Header
+
+Sticky First Column
+
+Horizontal Scroll
+
+Column Resize
+
+Column Sorting
+
+Column Visibility
+
+Search
+
+Pagination
+
+Loading Skeleton
+
+Empty State
+
+Error State
+
+Responsive Layout
+
+Professional Styling
+
+Future extensibility
+
+---
+
+# DIFFERENCE CALCULATION
+
+Difference
+
+Current - Previous
+
+---
+
+# PERCENTAGE CALCULATION
+
+(Current - Previous)
+
+/
+
+Previous
+
+×
+
+100
+
+Handle divide-by-zero safely.
+
+Display "-" when percentage cannot be calculated.
+
+---
+
+# COLOR RULES
+
+Positive Net Sales
+
+Green
+
+Negative Net Sales
+
+Red
+
+Positive Discount
+
+Red
+
+Negative Discount
+
+Green
+
+Positive Refund
+
+Red
+
+Negative Refund
+
+Green
+
+Positive Void Amount
+
+Red
+
+Negative Void Amount
+
+Green
+
+This logic should be centralized.
+
+---
+
+# SUMMARY TABLE
+
+Below every comparison table display another table.
+
+Example
+
+| Summary |  Current | Previous |
+| ------- | -------: | -------: |
+| SUM     | ₹850,000 | ₹790,000 |
+| AVERAGE | ₹141,667 | ₹131,667 |
+| MINIMUM | ₹110,000 |  ₹98,000 |
+| MAXIMUM | ₹175,000 | ₹160,000 |
+
+Support all backend aggregation types:
 
 - SUM
 - AVG
 - MIN
 - MAX
 
----
-
-# Dynamic Metrics
-
-Metrics change automatically based on report type.
+The selected aggregation should integrate with the backend analytics API where supported.
 
 ---
 
-## Daily Metrics
+# EXPORT
 
-- groceryTotal
-- volume
-- cashDeposit
-- checkDeposit
-- overShort
-- noSale
-- lineVoid
-- voidAmount
-- refunds
+Prepare UI for:
 
----
+Excel
 
-## Monthly Metrics
+CSV
 
-- gross
-- netSales
-- discount
-- promotion
-- refund
-- voidAmount
+PDF
+
+Implementation can be placeholder.
 
 ---
 
-# Dynamic Metric Selector
+# COMPONENT STRUCTURE
 
-Provide searchable multi-select.
+Analytics/
 
-Example:
+pages/
 
-- Gross
-- Net Sales
-- Discount
-- Refund
-- Promotion
-- Void Amount
+components/
 
-Users can choose any combination.
+ComparisonToolbar/
 
----
+ComparisonTypeSelector/
 
-# Select All / Clear All
+MetricSelector/
 
-Provide:
+ColumnSelector/
 
-- Select All
-- Clear All
+ComparisonTable/
 
----
+SummaryTable/
 
-# Dynamic Table Generation
+AggregationSelector/
 
-No hardcoded columns.
+ExportActions/
 
-Columns must be generated from selected metrics.
+hooks/
 
-Examples:
+services/
 
-Selected Metrics:
+types/
 
-- Gross
-- Net Sales
-- Refund
+utils/
 
-Generate:
+constants/
 
-| Month | Gross | Net Sales | Refund |
+Everything should be reusable.
 
 ---
 
-Selected Metrics:
+# DEVELOPMENT RULES
 
-- Gross
+Before writing code:
 
-Generate:
+1. Analyze backend APIs.
+2. Analyze existing frontend.
+3. Remove obsolete Analytics code.
+4. Design new folder structure.
+5. Design reusable components.
+6. Design state management.
+7. Design API integration.
+8. Design table architecture.
+9. Present the complete architecture and implementation plan.
+10. Wait for approval.
+11. Then start implementation.
 
-| Month | Gross |
-
----
-
-Selected Metrics:
-
-- Gross
-- Net Sales
-- Discount
-- Promotion
-- Refund
-- Void Amount
-
-Generate all columns.
+Do not immediately write code.
 
 ---
 
-# Column Visibility
-
-After data loads:
-
-User can:
-
-- Hide Gross
-- Hide Discount
-- Hide Refund
-
-without re-fetching data.
-
-Only affect UI.
-
----
-
-# Dynamic Charts
-
-Support:
-
-- Line Chart
-- Area Chart
-- Bar Chart
-- Horizontal Bar
-- Pie Chart
-- Donut Chart
-- Grouped Bar
-- Stacked Bar
-- Multi Line
-- Composed Chart
-
----
-
-# Smart Chart Suggestions
-
-Default Suggestions:
-
-- DATE → Line
-- MONTH → Line
-- STORE → Horizontal Bar
-- DEPARTMENT → Donut
-- YEAR → Grouped Bar
-
-User can override.
-
----
-
-# Filters
-
-Support every backend filter combination.
-
-## Daily Filters
-
-- From Date
-- To Date
-- Store Selection
-
-## Monthly Filters
-
-- Month
-- Year
-- Multiple Years
-- Department
-- Store Selection
-
-## Admin
-
-Support:
-
-- clientId
-- storeIds
-
-## Client
-
-Use authenticated store access.
-
----
-
-# All Possible Analytics Combinations
-
-Support:
-
-## Single Metric
-
-- Gross
-
-## Multiple Metrics
-
-- Gross
-- Net Sales
-- Refund
-
-## All Metrics
-
-- Gross
-- Net Sales
-- Discount
-- Promotion
-- Refund
-- Void Amount
-
----
-
-# Aggregate Analytics
-
-Support:
-
-## SUM
-
-Total values
-
-## AVG
-
-Average values
-
-## MIN
-
-Minimum values
-
-## MAX
-
-Maximum values
-
----
-
-# Cross Comparisons
-
-Support:
-
-## Store Comparison
-
-Store A vs Store B vs Store C
-
-## Month Comparison
-
-Jan vs Feb vs Mar
-
-## Year Comparison
-
-2024 vs 2025 vs 2026
-
-## Department Comparison
-
-A1 vs B2 vs D5
-
-## Metric Comparison
-
-Gross vs Net Sales vs Refund
-
----
-
-# KPI Cards
-
-Automatically generate KPI cards.
-
-For each selected metric show:
-
-- Total
-- Average
-- Minimum
-- Maximum
-- Growth %
-
-Example:
-
-Gross Sales
-
-- Total
-- Average
-- Minimum
-- Maximum
-- Growth %
-
----
-
-# View Modes
-
-Provide:
-
-## KPI + Chart + Table
-
-## Chart Only
-
-## Table Only
-
-## Split View
-
-Chart on top
-
-Table below
-
----
-
-# Export Features
-
-Support:
-
-- CSV
-- Excel
-- PDF
-- PNG
-
----
-
-# Export Rules
-
-Export only visible columns.
-
-Hidden columns should not be exported.
-
----
-
-# Saved Reports
-
-Allow users to save report configurations.
-
-Example:
-
-{
-"reportType":"MONTHLY",
-"groupBy":"MONTH",
-"metrics":["gross","netSales"],
-"aggregate":"SUM",
-"years":[2025,2026],
-"chartType":"LINE"
-}
-
-Support:
-
-- Save Report
-- Load Report
-- Rename Report
-- Delete Report
-
-Use local storage initially.
-
----
-
-# Data Transformation Layer
-
-Create reusable utilities.
-
-Convert backend response into:
-
-- Chart Data
-- Table Data
-- CSV Data
-- Excel Data
-- PDF Data
-
-Avoid duplicate transformation logic.
-
----
-
-# Performance Requirements
-
-Must support:
-
-- 50+ stores
-- 10+ metrics
-- Multiple years
-- Large datasets
+# CODE QUALITY
 
 Use:
 
-- React Query
-- Memoization
-- useMemo
-- useCallback
-- Lazy Loading
-- Code Splitting
-- Virtualized Tables
-- Query Caching
+- SOLID Principles
+- Clean Architecture
+- Reusable Components
+- Custom Hooks
+- Separation of Concerns
+- Performance Optimization
+- Memoization where appropriate
+- Lazy Loading where appropriate
+- Excellent Type Safety (if TypeScript exists)
+
+Avoid duplicated logic.
 
 ---
 
-# UI / UX Requirements
+# USER EXPERIENCE
 
-Enterprise SaaS quality.
+The page should feel like a premium enterprise financial reporting application.
 
-Use:
+It should impress clients during demos.
 
-- Skeleton Loaders
-- Smooth Animations
-- Tooltips
-- Empty States
-- Error States
-- Sticky Filters
-- Sticky Headers
-- Responsive Tables
-- Dark Mode Compatibility
+Every interaction should reduce clicks and make comparisons easier.
 
-Must feel premium.
+Always optimize for:
 
-Not like a basic admin dashboard.
+- Readability
+- Speed
+- Maintainability
+- Scalability
+- Business usability
 
 ---
 
-# Deliverables
+# FINAL DELIVERABLE
 
-Generate output in this exact order:
+Deliver a completely redesigned Analytics module that is:
 
-1. Existing Architecture Analysis
-2. Reusable Components Found
-3. Files To Modify
-4. Files To Create
-5. Component Hierarchy
-6. Route Changes
-7. API Integration Strategy
-8. State Management Strategy
-9. Data Transformation Strategy
-10. UI Wireframes
-11. Step-by-Step Implementation Plan
-12. Actual Code Changes
+- Production Ready
+- Enterprise Grade
+- Fully Responsive
+- Clean Architecture
+- Table First
+- Backend Compatible
+- Scalable for future Chart Analytics
+- Easy to maintain
+- Easy to extend
 
-Do not generate generic code.
+Do not implement any charts in Version 1.
 
-Analyze the codebase first.
-
-Then integrate analytics into the existing architecture using reusable components.
+Focus entirely on professional comparison tables, dynamic filtering, percentage differences, aggregation, and enterprise user experience.

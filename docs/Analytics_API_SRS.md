@@ -1,7 +1,7 @@
 # Analytics API — Software Requirements Specification
 
-**Version:** 1.0  
-**Date:** 2026-06-11  
+**Version:** 1.1  
+**Date:** 2026-07-04  
 **Author:** Hands Of Retail Engineering  
 **Base URL:** `http://localhost:8080`  
 **Auth Scheme:** HttpOnly Cookies (`access_token`)
@@ -121,7 +121,7 @@ The client controller extracts `clientId` from JWT, fetches their store mappings
 | Param | Type | Required | Default | Description |
 |---|---|---|---|---|
 | `reportType` | `string` | ✅ | — | `DAILY` or `MONTHLY` |
-| `groupBy` | `string` | ✅ | — | `DATE`, `MONTH`, `YEAR`, `STORE`, `DEPARTMENT` |
+| `groupBy` | `string` | ✅ | — | `DATE`, `MONTH`, `QUARTER`, `YEAR`, `STORE`, `DEPARTMENT` |
 | `metric` | `List<string>` | ✅ | — | One or more metric names to aggregate |
 | `aggregate` | `string` | ❌ | `SUM` | `SUM`, `AVG`, `MAX`, `MIN` |
 | `storeIds` | `List<Long>` | ❌ | — | Admin only — filter by stores. Pass multiple as `storeIds=1&storeIds=2` |
@@ -173,7 +173,7 @@ Every response wraps the standard `ApiResponse<AnalyticsData>` envelope used acr
 
 | Field | Type | Description |
 |---|---|---|
-| `labels` | `string[]` | X-axis values. Dates for DATE, month numbers for MONTH, years for YEAR, store names for STORE, dept IDs for DEPARTMENT |
+| `labels` | `string[]` | X-axis values. Dates for DATE, month numbers for MONTH (single year) or `YYYY-MM` for MONTH (multiple years), years for YEAR, store names for STORE, dept IDs for DEPARTMENT |
 | `datasets` | `object[]` | One dataset per metric requested |
 | `datasets[].label` | `string` | Human-readable metric name |
 | `datasets[].metric` | `string` | Raw metric key matching the request param |
@@ -187,6 +187,7 @@ Every response wraps the standard `ApiResponse<AnalyticsData>` envelope used acr
 |---|---|---|---|
 | `DATE` | ✅ | ❌ | Daily has `reportDate`; monthly does not |
 | `MONTH` | ❌ | ✅ | Monthly has `reportMonth`; daily does not |
+| `QUARTER` | ❌ | ✅ | Derived in SQL from `reportMonth`: Q1=(1–3), Q2=(4–6), Q3=(7–9), Q4=(10–12) |
 | `YEAR` | ❌ | ✅ | Monthly has `reportYear`; daily does not |
 | `STORE` | ✅ | ✅ | Both have `store_id` FK |
 | `DEPARTMENT` | ❌ | ✅ | Only monthly has `department_id` |
@@ -467,6 +468,67 @@ GET /api/v1/admin/analytics/reports
 
 > Frontend maps label `"1"` → `"Jan"`, `"2"` → `"Feb"` etc.
 
+#### Multi-Year Variant (v1.1)
+
+`groupBy=MONTH` accepts **multiple years** in one request. Label shape depends on how many years are requested:
+
+| Years requested | Label shape | Example |
+|---|---|---|
+| Exactly one | Month number, not zero-padded (unchanged from v1.0) | `"1"`, `"2"`, ..., `"12"` |
+| Two or more | Year-qualified, zero-padded, chronologically sorted | `"2025-01"`, `"2025-02"`, `"2026-01"` |
+
+Only buckets with data appear (no zero-fill). A `month` filter combined with multiple years returns that month once per year. Still a single SQL: `GROUP BY report_year, report_month ORDER BY report_year, report_month`.
+
+```
+GET /api/v1/admin/analytics/reports
+    ?reportType=MONTHLY
+    &groupBy=MONTH
+    &metric=netSales
+    &storeIds=1
+    &year=2025&year=2026
+    &aggregate=SUM
+```
+
+**Response:**
+```json
+{
+  "labels": ["2025-01", "2025-02", "2025-03", "2026-01", "2026-02"],
+  "datasets": [
+    {
+      "label": "Net Sales",
+      "metric": "netSales",
+      "data": [41500.00, 53200.00, 48900.00, 60100.00, 55400.00]
+    }
+  ],
+  "meta": {
+    "reportType": "MONTHLY", "groupBy": "MONTH", "aggregate": "SUM",
+    "storeIds": [1], "year": [2025, 2026], "totalDataPoints": 5
+  }
+}
+```
+
+#### Quarter Grouping (v1.1)
+
+`groupBy=QUARTER` (MONTHLY only, `year` required — one or more) buckets months into Q1 (1–3), Q2 (4–6), Q3 (7–9), Q4 (10–12), computed in SQL from `report_month`. Labels are `"Q1".."Q4"` for a single year, `"YYYY-Qn"` (chronologically sorted) for multiple years:
+
+```
+GET /api/v1/admin/analytics/reports
+    ?reportType=MONTHLY&groupBy=QUARTER
+    &metric=netSales&storeIds=1
+    &year=2025&year=2026&aggregate=SUM
+```
+
+**Response:**
+```json
+{
+  "labels": ["2025-Q1", "2025-Q2", "2026-Q1", "2026-Q4"],
+  "datasets": [
+    { "label": "Net Sales", "metric": "netSales",
+      "data": [143600.00, 10000.00, 115500.00, 20000.00] }
+  ]
+}
+```
+
 ---
 
 ### 6.4 Monthly — Year-over-Year (Grouped Bar Chart)
@@ -659,6 +721,7 @@ All validation runs **before** any database access. Returns `400` immediately on
 |---|---|
 | `groupBy=DATE` with `reportType=MONTHLY` | `"groupBy DATE is only valid for DAILY reports"` |
 | `groupBy=MONTH` with `reportType=DAILY` | `"groupBy MONTH is only valid for MONTHLY reports"` |
+| `groupBy=QUARTER` with `reportType=DAILY` | `"groupBy QUARTER is only valid for MONTHLY reports"` |
 | `groupBy=YEAR` with `reportType=DAILY` | `"groupBy YEAR is only valid for MONTHLY reports"` |
 | `groupBy=DEPARTMENT` with `reportType=DAILY` | `"groupBy DEPARTMENT is only valid for MONTHLY reports"` |
 | Metric not valid for report type | `"Metric 'gross' is not valid for DAILY reports"` |
@@ -670,7 +733,8 @@ All validation runs **before** any database access. Returns `400` immediately on
 | groupBy | Required additional params |
 |---|---|
 | `DATE` | At least one of `from` or `to` recommended; both optional but results may be large |
-| `MONTH` | `year` (single value) required |
+| `MONTH` | `year` (one or more values) required |
+| `QUARTER` | `year` (one or more values) required |
 | `YEAR` | `year` (one or more values) required |
 | `STORE` | No additional required |
 | `DEPARTMENT` | `storeIds` + `year` required |
@@ -694,7 +758,7 @@ All errors use the standard `ApiResponse` envelope with `"success": false`.
 | HTTP Status | Scenario | Message |
 |---|---|---|
 | `400` | Invalid `reportType` value | `"Invalid reportType. Allowed: DAILY, MONTHLY"` |
-| `400` | Invalid `groupBy` value | `"Invalid groupBy. Allowed: DATE, MONTH, YEAR, STORE, DEPARTMENT"` |
+| `400` | Invalid `groupBy` value | `"Invalid groupBy. Allowed: DATE, MONTH, QUARTER, YEAR, STORE, DEPARTMENT"` |
 | `400` | Invalid `aggregate` value | `"Invalid aggregate. Allowed: SUM, AVG, MAX, MIN"` |
 | `400` | `groupBy` incompatible with `reportType` | `"groupBy X is not valid for Y reports"` |
 | `400` | Metric invalid for report type | `"Metric 'X' is not valid for Y reports"` |
@@ -761,7 +825,7 @@ For high-traffic analytics, consider:
 |---|---|---|---|---|---|
 | 1 | `DAILY` | `DATE` | `SUM/AVG` | `storeIds`, `from`, `to` | Line / Area |
 | 2 | `DAILY` | `STORE` | `SUM/AVG` | `storeIds`/`clientId`, `from`, `to` | Bar |
-| 3 | `MONTHLY` | `MONTH` | `SUM/AVG` | `storeIds`, `year` (single) | Line |
+| 3 | `MONTHLY` | `MONTH` | `SUM/AVG` | `storeIds`, `year` (one or more) | Line |
 | 4 | `MONTHLY` | `YEAR` | `SUM/AVG` | `storeIds`, `year` (multi) | Grouped Bar |
 | 5 | `MONTHLY` | `STORE` | `SUM/AVG` | `clientId`, `month`, `year` | Bar / Leaderboard |
 | 6 | `MONTHLY` | `DEPARTMENT` | `SUM/AVG` | `storeIds`, `month`, `year` | Pie / Donut |

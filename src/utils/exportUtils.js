@@ -41,6 +41,20 @@ const buildHtmlTable = ({ headers, body }) => `
   </table>
 `
 
+// Export matrix honours column visibility: pass the same columns the table renders.
+export const buildExportMatrix = (columns, rows) => ({
+  headers: columns.map((column) => column.header),
+  body: rows.map((row) =>
+    columns.map((column) => {
+      const raw = row[column.key]
+      if ((raw === undefined || raw === null) && column.render) {
+        return String(column.render(row) ?? '')
+      }
+      return raw ?? ''
+    }),
+  ),
+})
+
 export const exportCsv = ({ headers, body }, filename) => {
   const lines = [headers, ...body].map((row) => row.map(escapeCsvCell).join(','))
   const blob = new Blob([String.fromCharCode(0xfeff), lines.join('\n')], { type: 'text/csv;charset=utf-8' })
@@ -48,11 +62,22 @@ export const exportCsv = ({ headers, body }, filename) => {
   triggerDownload(blob, `${filename}.csv`)
 }
 
-export const exportExcel = ({ headers, body }, filename) => {
+// Optional summary block prepended above the data table (used by the
+// comparison export so the summary cards travel with the sheet).
+const buildSummaryCardsTable = (summaryCards) =>
+  buildHtmlTable({
+    headers: ['Summary', 'Value', 'Detail'],
+    body: summaryCards.map((card) => [card.label, card.value, card.caption ?? '']),
+  })
+
+export const exportExcel = ({ headers, body }, filename, { summaryCards } = {}) => {
+  const summaryHtml = summaryCards?.length
+    ? `${buildSummaryCardsTable(summaryCards)}<br/>`
+    : ''
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
       <head><meta charset="UTF-8" /></head>
-      <body>${buildHtmlTable({ headers, body })}</body>
+      <body>${summaryHtml}${buildHtmlTable({ headers, body })}</body>
     </html>
   `
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' })
@@ -288,6 +313,7 @@ export const exportPdf = async ({
   rows,
   columns,
   storeMeta,
+  summaryCards,
 }) => {
   const logoDataUrl = await loadImageAsDataUrl(horLogo)
 
@@ -321,9 +347,22 @@ export const exportPdf = async ({
         <span class="meta-label">Records</span>  <span class="meta-value">${recordCount}</span>
       </div>`
 
+  // Summary cards (comparison exports) print as a card grid above the chart.
+  const summaryCardsHtml = summaryCards?.length
+    ? `<div class="summary-cards">${summaryCards
+        .map(
+          (card) => `<div class="summary-card">
+            <div class="summary-card__label">${escapeHtml(card.label)}</div>
+            <div class="summary-card__value">${escapeHtml(card.value)}</div>
+            ${card.caption ? `<div class="summary-card__caption">${escapeHtml(card.caption)}</div>` : ''}
+          </div>`,
+        )
+        .join('')}</div>`
+    : ''
+
   const bodyHtml = isGrouped
     ? buildGroupedSectionsHtml({ rows, columns, reportType, storeMeta, exportDateTime })
-    : `${chartImageHtml}${buildPdfTable(matrix)}`
+    : `${summaryCardsHtml}${chartImageHtml}${buildPdfTable(matrix)}`
 
   printWindow.document.write(`<!DOCTYPE html>
 <html>
@@ -390,6 +429,12 @@ export const exportPdf = async ({
     tr    { page-break-inside: avoid; break-inside: avoid; }
 
     .chart-img { width: 100%; max-width: 100%; margin: 14px 0; }
+
+    .summary-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; break-inside: avoid; page-break-inside: avoid; }
+    .summary-card { flex: 1 1 150px; min-width: 130px; border: 1px solid #e2e8f0; border-top: 3px solid #1e3a6e; border-radius: 4px; padding: 8px 10px; background: #f8fafc; }
+    .summary-card__label { font-size: 7.5pt; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .summary-card__value { font-size: 11pt; font-weight: 700; color: #1e3a6e; }
+    .summary-card__caption { font-size: 8pt; color: #475569; margin-top: 2px; }
   </style>
 </head>
 <body>

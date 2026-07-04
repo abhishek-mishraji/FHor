@@ -16,11 +16,10 @@ import { useTable } from '../../hooks/useTable'
 import clientService from '../../services/clientService'
 import monthlyReportService from '../../services/monthlyReportService'
 import storeService from '../../services/storeService'
-import { buildExportMatrix } from '../../utils/analyticsTransforms'
 import { formatMonthYear, getMonthOptions, getYearOptions } from '../../utils/dateUtils'
 import { handleServiceError } from '../../utils/errorHandler'
 import { formatCurrency, formatNumber } from '../../utils/numberUtils'
-import { exportCsv, exportExcel, exportPdf } from '../../utils/exportUtils'
+import { buildExportMatrix, exportCsv, exportExcel, exportPdf } from '../../utils/exportUtils'
 import {
   validateMonthlyReportForm,
   validateMonthlyUploadForm,
