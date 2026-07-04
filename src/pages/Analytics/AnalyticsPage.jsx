@@ -49,6 +49,9 @@ const AnalyticsPage = () => {
   const [columnPrefs, setColumnPrefs] = useState(DEFAULT_COLUMN_PREFS)
   const [lastRun, setLastRun] = useState(null)
   const [exporting, setExporting] = useState(false)
+  // UI-only: the filter toolbar collapses to a summary bar after a successful
+  // Compare so the table gets the vertical space.
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false)
   const exportRowsRef = useRef([])
 
   const handleVisibleRowsChange = useCallback((rows) => {
@@ -181,6 +184,7 @@ const AnalyticsPage = () => {
     // Column visibility follows the newly selected metrics on every run.
     setColumnPrefs((previous) => ({ ...previous, visibleMetrics: null }))
     setLastRun(effectiveFilters)
+    setToolbarCollapsed(true)
     comparisonQuery.run(effectiveFilters, departmentNames)
   }
 
@@ -189,6 +193,7 @@ const AnalyticsPage = () => {
     setErrors({})
     setColumnPrefs(DEFAULT_COLUMN_PREFS)
     setLastRun(null)
+    setToolbarCollapsed(false)
     comparisonQuery.reset()
   }
 
@@ -301,6 +306,8 @@ const AnalyticsPage = () => {
         onCompare={handleCompare}
         onReset={handleReset}
         comparing={comparisonQuery.loading}
+        collapsed={toolbarCollapsed}
+        onExpand={() => setToolbarCollapsed(false)}
         exportSlot={
           <ExportActions disabled={!result} exporting={exporting} onExport={handleExport} />
         }

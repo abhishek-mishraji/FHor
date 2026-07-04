@@ -15,8 +15,11 @@ const SKELETON_FALLBACK_COLUMNS = Array.from({ length: 5 }, (_, index) => ({
 }))
 
 const SortIndicator = ({ dir }) => (
-  <span className="comparison-table__sort-indicator" aria-hidden="true">
-    {dir === 'asc' ? '▲' : dir === 'desc' ? '▼' : '⇅'}
+  <span
+    className={`comparison-table__sort-indicator ${dir ? 'comparison-table__sort-indicator--active' : ''}`.trim()}
+    aria-hidden="true"
+  >
+    {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
   </span>
 )
 
@@ -230,14 +233,30 @@ const ComparisonTable = memo(function ComparisonTable({
   return (
     <div className="comparison-table">
       <div className="comparison-table__toolbar">
-        <input
-          type="search"
-          className="comparison-table__search"
-          value={table.searchTerm}
-          onChange={(event) => table.setSearchTerm(event.target.value)}
-          placeholder={searchPlaceholder}
-          aria-label="Search table rows"
-        />
+        <div className="comparison-table__search-wrap">
+          <svg
+            className="comparison-table__search-icon"
+            aria-hidden="true"
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <line x1="21" y1="21" x2="16.5" y2="16.5" />
+          </svg>
+          <input
+            type="search"
+            className="comparison-table__search"
+            value={table.searchTerm}
+            onChange={(event) => table.setSearchTerm(event.target.value)}
+            placeholder={searchPlaceholder}
+            aria-label="Search table rows"
+          />
+        </div>
         {toolbar}
       </div>
 

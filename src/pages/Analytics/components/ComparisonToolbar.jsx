@@ -3,7 +3,11 @@ import Button from '../../../components/ui/Button'
 import SelectInput from '../../../components/forms/SelectInput'
 import MultiSelectInput from '../../../components/forms/MultiSelectInput'
 import TextInput from '../../../components/forms/TextInput'
-import { MODE_FIELD_CONFIG, REPORT_TYPE_OPTIONS } from '../../../constants/comparisonConstants'
+import {
+  COMPARISON_MODE_OPTIONS,
+  MODE_FIELD_CONFIG,
+  REPORT_TYPE_OPTIONS,
+} from '../../../constants/comparisonConstants'
 import { getDayOptions, getMonthOptions, getYearOptions } from '../../../utils/dateUtils'
 import AggregationSelector from './AggregationSelector'
 import ComparisonTypeSelector from './ComparisonTypeSelector'
@@ -13,6 +17,8 @@ const monthOptions = getMonthOptions()
 
 // Sticky filter bar. Which fields render is driven per comparison mode by
 // MODE_FIELD_CONFIG so every mode only shows what it actually uses.
+// After a comparison runs the bar collapses to a one-line summary so the
+// table gets the vertical space; "Adjust Filters" expands it again.
 const ComparisonToolbar = memo(function ComparisonToolbar({
   values,
   errors,
@@ -24,6 +30,8 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
   onReset,
   comparing = false,
   exportSlot = null,
+  collapsed = false,
+  onExpand,
 }) {
   const fields = MODE_FIELD_CONFIG[values.mode] || {}
   const yearOptions = useMemo(() => getYearOptions(), [])
@@ -33,9 +41,39 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
     [values.fromDate, values.toDate],
   )
 
+  if (collapsed) {
+    const summaryChips = [
+      storeOptions.find((option) => option.value === String(values.storeId))?.label,
+      REPORT_TYPE_OPTIONS.find((option) => option.value === values.reportType)?.label,
+      COMPARISON_MODE_OPTIONS.find((option) => option.value === values.mode)?.label,
+    ].filter(Boolean)
+
+    return (
+      <section
+        className="comparison-toolbar comparison-toolbar--collapsed"
+        aria-label="Comparison filters (collapsed)"
+      >
+        <div className="comparison-toolbar__summary">
+          <span className="comparison-toolbar__summary-label">Filters</span>
+          {summaryChips.map((chip) => (
+            <span key={chip} className="comparison-toolbar__chip">
+              {chip}
+            </span>
+          ))}
+        </div>
+        <div className="comparison-toolbar__summary-actions">
+          {exportSlot}
+          <Button type="button" variant="secondary" size="sm" onClick={onExpand}>
+            Adjust Filters
+          </Button>
+        </div>
+      </section>
+    )
+  }
+
   return (
     <section className="comparison-toolbar" aria-label="Comparison filters">
-      <div className="comparison-toolbar__fields">
+      <div className="comparison-toolbar__scope">
         <SelectInput
           label="Store"
           name="storeId"
@@ -63,7 +101,9 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
           onChange={onChange}
           error={errors.mode}
         />
+      </div>
 
+      <div className="comparison-toolbar__fields">
         {fields.year ? (
           <SelectInput
             label="Year"
@@ -214,15 +254,22 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
       </div>
 
       <div className="comparison-toolbar__actions">
-        <Button type="button" variant="primary" onClick={onCompare} isLoading={comparing}>
-          Compare
-        </Button>
         <Button type="button" variant="ghost" onClick={onReset} disabled={comparing}>
           Reset
         </Button>
-        {exportSlot}
         <Button type="button" variant="secondary" disabled title="Saved views are coming soon">
           Save View
+        </Button>
+        <span className="comparison-toolbar__actions-spacer" aria-hidden="true" />
+        {exportSlot}
+        <Button
+          type="button"
+          variant="primary"
+          className="comparison-toolbar__compare"
+          onClick={onCompare}
+          isLoading={comparing}
+        >
+          Compare
         </Button>
       </div>
     </section>

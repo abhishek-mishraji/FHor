@@ -1,5 +1,7 @@
-/* Analytics — Monthly Comparison V1
-   Enterprise financial-report styling. BEM, tokens from styles/variables/tokens.css. */
+/* Analytics — Report Comparison
+   Enterprise financial-report styling. BEM, tokens from styles/variables/tokens.css.
+   Design intent: white financial-grade surfaces, restrained color (green/red for
+   deltas, blue for primary action only), tabular numerals, desktop-first density. */
 
 .analytics {
   display: flex;
@@ -14,20 +16,42 @@
 }
 
 .analytics__result-title {
-  margin: 0;
-  font-size: 0.95rem;
+  margin: 0 0 calc(-1 * var(--space-1));
+  font-size: 1rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--color-ink);
+}
+
+.analytics__result-title::before {
+  content: 'Result';
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
 }
 
 .analytics__placeholder {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-xs);
   padding: var(--space-6) var(--space-4);
 }
 
-/* ---------- Sticky filter toolbar ---------- */
+.analytics__placeholder .ui-empty-state {
+  border: none;
+  background: transparent;
+  min-height: 300px;
+}
+
+/* ============================================================
+   Sticky analytics toolbar — three tiers:
+   scope (what) / parameters (when & how) / actions
+   ============================================================ */
 
 .comparison-toolbar {
   /* Page scrolls at window level with the sticky app topbar at top: 0 —
@@ -37,38 +61,113 @@
   z-index: 9;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-soft);
-  padding: var(--space-3) var(--space-4);
+  padding: var(--space-3) var(--space-4) var(--space-2);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
+/* Tier 1 — scope. Fixed comfortable widths: dropdowns must not stretch into
+   ribbons on wide monitors. */
+.comparison-toolbar__scope {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) minmax(160px, 220px) minmax(280px, 460px);
+  gap: var(--space-2) var(--space-3);
+  align-items: start;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Tier 2 — mode parameters. Capped column width keeps fields scannable on
+   1920px+ instead of spreading across the full row. */
 .comparison-toolbar__fields {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 240px));
   gap: var(--space-2) var(--space-3);
   align-items: start;
 }
 
+/* Tier 3 — actions. Secondary actions left, primary CTA right-most. */
 .comparison-toolbar__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
+  gap: var(--space-1);
   align-items: center;
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-2);
 }
 
+.comparison-toolbar__actions-spacer {
+  flex: 1 1 auto;
+}
+
+.comparison-toolbar__compare {
+  min-width: 130px;
+}
+
+/* Collapsed state — one-line summary strip shown after Compare runs. */
+.comparison-toolbar--collapsed {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  min-height: 52px;
+}
+
+.comparison-toolbar__summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.comparison-toolbar__summary-label {
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin-right: var(--space-1);
+}
+
+.comparison-toolbar__chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 260px;
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-ink-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comparison-toolbar__summary-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
 .comparison-type-selector__hint {
   margin: 0.35rem 0 0;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  font-size: 0.72rem;
+  line-height: 1.45;
   color: var(--color-ink-soft);
 }
 
-/* ---------- Column selector & export popovers ---------- */
+/* ============================================================
+   Column selector & export popovers
+   ============================================================ */
 
 .column-selector,
 .export-actions {
@@ -79,13 +178,13 @@
 .export-actions__panel {
   position: absolute;
   right: 0;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   z-index: 40;
-  min-width: 220px;
+  min-width: 248px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-lg);
   padding: var(--space-2);
   display: flex;
   flex-direction: column;
@@ -95,7 +194,7 @@
 .column-selector__section {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.15rem;
 }
 
 .column-selector__section + .column-selector__section {
@@ -104,21 +203,29 @@
 }
 
 .column-selector__section-title {
-  margin: 0;
-  font-size: 0.7rem;
+  margin: 0 0 0.3rem;
+  padding: 0 0.4rem;
+  font-size: 0.66rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--color-ink-muted);
 }
 
 .column-selector__option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.55rem;
+  min-height: 32px;
+  padding: 0 0.4rem;
+  border-radius: var(--radius-xs);
+  font-size: 0.8125rem;
   color: var(--color-ink);
   cursor: pointer;
+}
+
+.column-selector__option:hover {
+  background: var(--color-surface-accent);
 }
 
 .column-selector__option input {
@@ -130,9 +237,11 @@
   background: none;
   text-align: left;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   color: var(--color-ink);
-  padding: 0.4rem 0.5rem;
+  min-height: 34px;
+  padding: 0 0.6rem;
   border-radius: var(--radius-xs);
   cursor: pointer;
 }
@@ -142,12 +251,14 @@
   color: var(--color-primary-strong);
 }
 
-/* ---------- Enterprise comparison table ---------- */
+/* ============================================================
+   Enterprise comparison table
+   ============================================================ */
 
 .comparison-table {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   overflow: hidden;
 }
@@ -159,28 +270,67 @@
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
+}
+
+.comparison-table__search-wrap {
+  position: relative;
+  flex: 0 1 320px;
+  display: flex;
+  align-items: center;
+}
+
+.comparison-table__search-icon {
+  position: absolute;
+  left: 0.7rem;
+  color: var(--color-ink-muted);
+  pointer-events: none;
 }
 
 .comparison-table__search {
-  flex: 0 1 260px;
+  width: 100%;
   font: inherit;
-  font-size: 0.85rem;
-  padding: 0.45rem 0.7rem;
-  border: 1px solid var(--color-border);
+  font-size: 0.8125rem;
+  height: 34px;
+  padding: 0 0.7rem 0 2rem;
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-sm);
   background: var(--color-surface);
   color: var(--color-ink);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.comparison-table__search::placeholder {
+  color: var(--color-ink-muted);
 }
 
 .comparison-table__search:focus {
-  outline: 2px solid var(--color-primary-light);
+  outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.12);
 }
 
+/* Tall desktop viewports get a tall table; small screens keep a sane floor. */
 .comparison-table__scroll {
   overflow: auto;
-  max-height: 65vh;
+  max-height: max(480px, calc(100vh - 340px));
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+}
+
+.comparison-table__scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.comparison-table__scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 8px;
+  border: 2px solid var(--color-surface);
+}
+
+.comparison-table__scroll::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .comparison-table__table {
@@ -189,7 +339,7 @@
   border-collapse: separate;
   border-spacing: 0;
   table-layout: fixed;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
 }
 
 .comparison-table__head {
@@ -200,34 +350,45 @@
 
 .comparison-table__th {
   position: relative;
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   color: var(--color-ink-soft);
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
   text-align: left;
-  padding: 0.6rem 0.75rem;
+  padding: 0.65rem 0.75rem;
   border-bottom: 1px solid var(--color-border-strong);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* Metric group band — quiet caption row with hairline separators between
+   groups instead of a colored block. */
 .comparison-table__th--group {
   text-align: center;
-  color: var(--color-primary-strong);
-  background: var(--color-surface-accent);
+  color: var(--color-ink);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  background: var(--color-surface-muted);
   border-bottom: 1px solid var(--color-border);
+  border-left: 1px solid var(--color-border);
+}
+
+.comparison-table__th--group:first-child {
+  border-left: none;
 }
 
 .comparison-table__th--sortable {
   cursor: pointer;
   user-select: none;
+  transition: color 0.12s ease;
 }
 
 .comparison-table__th--sortable:hover {
-  color: var(--color-primary);
+  color: var(--color-ink);
+  background: var(--color-surface-muted);
 }
 
 .comparison-table__th-content {
@@ -237,18 +398,41 @@
   gap: 0.4rem;
 }
 
+/* Numeric columns: header label sits flush right, directly above its values,
+   so figures line up straight under their headings. */
+.comparison-table__th.comparison-table__cell--right .comparison-table__th-content {
+  justify-content: flex-end;
+}
+
+.comparison-table__th.comparison-table__cell--right .comparison-table__th-sub {
+  text-align: right;
+}
+
 .comparison-table__th-sub {
   display: block;
   font-weight: 500;
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: var(--color-ink-muted);
   text-transform: none;
   letter-spacing: 0;
 }
 
+/* Sort affordance appears on hover; stays visible (in brand blue) when active. */
 .comparison-table__sort-indicator {
-  font-size: 0.6rem;
+  font-size: 0.7rem;
+  line-height: 1;
   color: var(--color-ink-muted);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.comparison-table__th--sortable:hover .comparison-table__sort-indicator {
+  opacity: 0.7;
+}
+
+.comparison-table__sort-indicator--active {
+  opacity: 1 !important;
+  color: var(--color-primary);
 }
 
 .comparison-table__resize-handle {
@@ -266,7 +450,8 @@
 }
 
 .comparison-table__td {
-  padding: 0.55rem 0.75rem;
+  height: 40px;
+  padding: 0.45rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
   color: var(--color-ink);
   background: var(--color-surface);
@@ -276,16 +461,22 @@
   font-variant-numeric: tabular-nums;
 }
 
-.comparison-table__row:hover .comparison-table__td {
+/* Zebra striping — one step above white, quiet enough for long sessions. */
+.comparison-table__row:nth-child(even) .comparison-table__td {
   background: var(--color-surface-muted);
 }
 
-/* Sticky first column — corner header cell sits above everything. */
+.comparison-table__row:hover .comparison-table__td {
+  background: var(--color-surface-accent);
+}
+
+/* Sticky first column — soft shadow edge signals depth while scrolling. */
 .comparison-table__cell--sticky {
   position: sticky;
   left: 0;
   z-index: 1;
   border-right: 1px solid var(--color-border-strong);
+  box-shadow: 6px 0 8px -6px rgba(15, 23, 42, 0.08);
   font-weight: 600;
 }
 
@@ -303,13 +494,13 @@ th.comparison-table__cell--sticky {
 }
 
 .comparison-table__td--negative {
-  color: #B91C1C;
+  color: #b91c1c;
   font-weight: 600;
 }
 
 .comparison-table__skeleton {
   display: block;
-  height: 0.85rem;
+  height: 0.8rem;
   border-radius: var(--radius-xs);
   background: linear-gradient(
     90deg,
@@ -334,25 +525,59 @@ th.comparison-table__cell--sticky {
   padding: var(--space-4);
 }
 
+.comparison-table__empty .ui-empty-state {
+  border: none;
+  background: transparent;
+}
+
 .comparison-table__error {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-5) var(--space-3);
-  color: var(--color-danger);
-  font-size: 0.9rem;
+  padding: var(--space-6) var(--space-3);
+  color: var(--color-ink-soft);
+  font-size: 0.875rem;
   text-align: center;
 }
 
-/* ---------- Summary table ---------- */
+.comparison-table__error p {
+  margin: 0;
+  color: var(--color-danger);
+  font-weight: 500;
+}
+
+/* Pagination lives inside the card — give it the card's breathing room. */
+.comparison-table .pagination-bar {
+  margin-top: 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border);
+}
+
+/* ============================================================
+   Summary table — docks to the bottom of the comparison table
+   so the two read as one report, not two random cards.
+   ============================================================ */
 
 .summary-table {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-xs);
   overflow: hidden;
+}
+
+.comparison-table:has(+ .summary-table) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.comparison-table:has(+ .summary-table) + .summary-table {
+  margin-top: calc(-1 * var(--space-3));
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  box-shadow: none;
 }
 
 .summary-table__header {
@@ -360,24 +585,30 @@ th.comparison-table__cell--sticky {
   align-items: baseline;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--color-border-strong);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-surface-muted);
 }
 
 .summary-table__header h2 {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
   color: var(--color-ink);
 }
 
 .summary-table__header p {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--color-ink-muted);
 }
 
 .summary-table__scroll {
   overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
 }
 
 .summary-table__table {
@@ -385,25 +616,30 @@ th.comparison-table__cell--sticky {
   min-width: 480px;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.85rem;
+  font-size: 0.8125rem;
 }
 
 .summary-table__table th,
 .summary-table__table td {
-  padding: 0.55rem 0.75rem;
+  padding: 0.5rem 0.75rem;
   border-bottom: 1px solid var(--color-border);
   text-align: right;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 
+.summary-table__table tbody tr:last-child th,
+.summary-table__table tbody tr:last-child td {
+  border-bottom: none;
+}
+
 .summary-table__table thead th {
-  background: var(--color-surface-muted);
+  background: var(--color-surface);
   color: var(--color-ink-soft);
-  font-size: 0.72rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.07em;
 }
 
 .summary-table__label-col {
@@ -419,9 +655,18 @@ th.comparison-table__cell--sticky {
 
 .summary-table__row--active .summary-table__label-col {
   color: var(--color-primary-strong);
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
-/* ---------- Responsive ---------- */
+/* ============================================================
+   Responsive — desktop first; degrade gracefully
+   ============================================================ */
+
+@media (max-width: 1180px) {
+  .comparison-toolbar__scope {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
 
 @media (max-width: 980px) {
   .comparison-toolbar {
@@ -434,8 +679,22 @@ th.comparison-table__cell--sticky {
 }
 
 @media (max-width: 640px) {
+  .comparison-toolbar__scope,
   .comparison-toolbar__fields {
     grid-template-columns: 1fr;
+  }
+
+  .comparison-toolbar__actions {
+    justify-content: stretch;
+  }
+
+  .comparison-toolbar__actions-spacer {
+    display: none;
+  }
+
+  .comparison-toolbar__compare {
+    flex: 1 1 100%;
+    order: -1;
   }
 
   .comparison-table__toolbar {
@@ -443,7 +702,7 @@ th.comparison-table__cell--sticky {
     align-items: stretch;
   }
 
-  .comparison-table__search {
+  .comparison-table__search-wrap {
     flex-basis: auto;
   }
 }
