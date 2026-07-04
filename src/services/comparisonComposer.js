@@ -22,13 +22,14 @@ const toNumber = (value) => {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-// Admin scopes by the selected store; the client endpoint resolves stores
-// from the JWT, so client requests carry no scope params.
+// Both roles scope by the selected store. The client endpoint still resolves
+// allowed stores from the JWT server-side, so a client's storeIds can only
+// narrow within their own stores.
 const buildParams = (values, isAdmin, metrics, extra = {}, { includeDepartment = true } = {}) => ({
   reportType: 'MONTHLY',
   aggregate: values.aggregate || 'SUM',
   metric: metrics,
-  ...(isAdmin ? { storeIds: [values.storeId] } : {}),
+  ...(values.storeId ? { storeIds: [values.storeId] } : {}),
   ...(includeDepartment && values.departmentId ? { departmentId: values.departmentId } : {}),
   ...extra,
 })

@@ -13,7 +13,6 @@ const monthOptions = getMonthOptions()
 // Sticky filter bar. Which fields render is driven per comparison mode by
 // MODE_FIELD_CONFIG so every mode only shows what it actually uses.
 const ComparisonToolbar = memo(function ComparisonToolbar({
-  isAdmin,
   values,
   errors,
   onChange,
@@ -31,18 +30,16 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
   return (
     <section className="comparison-toolbar" aria-label="Comparison filters">
       <div className="comparison-toolbar__fields">
-        {isAdmin ? (
-          <SelectInput
-            label="Store"
-            name="storeId"
-            value={values.storeId}
-            onChange={onChange}
-            options={storeOptions}
-            error={errors.storeId}
-            placeholder={storesLoading ? 'Loading stores...' : 'Select a store'}
-            disabled={storesLoading}
-          />
-        ) : null}
+        <SelectInput
+          label="Store"
+          name="storeId"
+          value={values.storeId}
+          onChange={onChange}
+          options={storeOptions}
+          error={errors.storeId}
+          placeholder={storesLoading ? 'Loading stores...' : 'Select a store'}
+          disabled={storesLoading}
+        />
 
         <ComparisonTypeSelector value={values.mode} onChange={onChange} error={errors.mode} />
 

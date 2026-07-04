@@ -70,28 +70,30 @@ const AnalyticsPage = () => {
     [storesQuery.data],
   )
 
+  // Clients start on their first accessible store so the page works without
+  // an extra click; owners/partners with several stores can switch freely.
+  // Derived (not stored) so it never fights an explicit selection.
+  const effectiveFilters = useMemo(() => {
+    if (isAdmin || filters.storeId || !storeOptions.length) {
+      return filters
+    }
+
+    return { ...filters, storeId: storeOptions[0].value }
+  }, [isAdmin, filters, storeOptions])
+
   // There is no departments endpoint: department names are discovered from
-  // the monthly reports of the selected store (all client stores for clients).
+  // the monthly reports of the selected store.
   const departmentsQuery = useApi(
     async ({ signal }) => {
-      if (isAdmin) {
-        if (!filters.storeId) {
-          return []
-        }
-
-        return monthlyReportService.getAdminReports({ storeId: filters.storeId }, { signal })
+      if (!effectiveFilters.storeId) {
+        return []
       }
 
-      const stores = storesQuery.data || []
-      const reports = await Promise.all(
-        stores.map((store) =>
-          monthlyReportService.getClientReportsByStore(store.storeId, { signal }).catch(() => []),
-        ),
-      )
-
-      return reports.flat()
+      return isAdmin
+        ? monthlyReportService.getAdminReports({ storeId: effectiveFilters.storeId }, { signal })
+        : monthlyReportService.getClientReportsByStore(effectiveFilters.storeId, { signal })
     },
-    { deps: [isAdmin, filters.storeId, (storesQuery.data || []).length], initialData: [] },
+    { deps: [isAdmin, effectiveFilters.storeId], initialData: [] },
   )
 
   const departmentNames = useMemo(() => {
@@ -144,7 +146,7 @@ const AnalyticsPage = () => {
   }
 
   const handleCompare = () => {
-    const validationErrors = validateComparisonForm(filters, { isAdmin })
+    const validationErrors = validateComparisonForm(effectiveFilters)
     setErrors(validationErrors)
 
     if (Object.keys(validationErrors).length) {
@@ -158,8 +160,8 @@ const AnalyticsPage = () => {
 
     // Column visibility follows the newly selected metrics on every run.
     setColumnPrefs((previous) => ({ ...previous, visibleMetrics: null }))
-    setLastRun(filters)
-    comparisonQuery.run(filters, departmentNames)
+    setLastRun(effectiveFilters)
+    comparisonQuery.run(effectiveFilters, departmentNames)
   }
 
   const handleReset = () => {
@@ -265,8 +267,7 @@ const AnalyticsPage = () => {
       />
 
       <ComparisonToolbar
-        isAdmin={isAdmin}
-        values={filters}
+        values={effectiveFilters}
         errors={errors}
         onChange={handleChange}
         storeOptions={storeOptions}

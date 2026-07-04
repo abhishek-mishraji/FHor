@@ -1,9 +1,9 @@
 import { COMPARISON_MODES } from '../constants/comparisonConstants'
 
-export const validateComparisonForm = (values, { isAdmin } = {}) => {
+export const validateComparisonForm = (values) => {
   const errors = {}
 
-  if (isAdmin && !values.storeId) {
+  if (!values.storeId) {
     errors.storeId = 'Select a store'
   }
 
