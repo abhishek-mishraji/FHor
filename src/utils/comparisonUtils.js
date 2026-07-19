@@ -81,18 +81,18 @@ const summarizeValues = (values) => {
 }
 
 // Trend column style per mode: arrow glyphs for sequential comparisons,
-// Better/Worse text for reference comparisons, none for Year over Year.
+// none for reference-style comparisons and Year over Year.
 const STATUS_STYLE_BY_MODE = {
   [COMPARISON_MODES.MONTH_OVER_MONTH]: 'trend',
   [COMPARISON_MODES.SELECTED_MONTHS]: 'trend',
   [COMPARISON_MODES.METRIC]: 'trend',
-  [COMPARISON_MODES.ONE_VS_MANY]: 'status',
-  [COMPARISON_MODES.DEPARTMENT]: 'status',
+  [COMPARISON_MODES.ONE_VS_MANY]: null,
+  [COMPARISON_MODES.DEPARTMENT]: null,
   [COMPARISON_MODES.YEAR_OVER_YEAR]: null,
   [COMPARISON_MODES.DAY_OVER_DAY]: 'trend',
   [COMPARISON_MODES.SELECTED_DAYS]: 'trend',
   [COMPARISON_MODES.DAILY_METRIC]: 'trend',
-  [COMPARISON_MODES.ONE_DAY_VS_RANGE]: 'status',
+  [COMPARISON_MODES.ONE_DAY_VS_RANGE]: null,
 }
 
 // Count metrics (volume, no-sales, line voids) are plain quantities; everything

@@ -58,7 +58,7 @@ export const COMPARISON_MODE_OPTIONS = [
     reportType: REPORT_TYPES.MONTHLY,
     label: 'Department Comparison (In a Month)',
     description:
-      'Compare all departments in a selected month against the previous month.',
+      'Compare all departments between any selected month/year and any other selected month/year.',
   },
   {
     value: COMPARISON_MODES.METRIC,
@@ -193,6 +193,8 @@ export const MODE_FIELD_CONFIG = {
   [COMPARISON_MODES.DEPARTMENT]: {
     year: true,
     month: true,
+    comparisonYear: true,
+    comparisonMonth: true,
     metrics: true,
   },
   [COMPARISON_MODES.METRIC]: {
@@ -234,6 +236,8 @@ export const DEFAULT_METRICS_BY_REPORT_TYPE = {
 
 export const buildDefaultFilters = () => {
   const now = new Date()
+  const previousMonth = now.getMonth() === 0 ? 12 : now.getMonth()
+  const previousYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear()
 
   return {
     reportType: REPORT_TYPES.MONTHLY,
@@ -242,6 +246,8 @@ export const buildDefaultFilters = () => {
     year: now.getFullYear(),
     years: [now.getFullYear() - 1, now.getFullYear()],
     month: now.getMonth() + 1,
+    comparisonYear: previousYear,
+    comparisonMonth: previousMonth,
     referenceMonth: '',
     comparisonMonths: [],
     departmentId: '',

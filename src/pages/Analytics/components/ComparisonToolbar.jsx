@@ -34,7 +34,7 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
   onExpand,
 }) {
   const fields = MODE_FIELD_CONFIG[values.mode] || {}
-  const yearOptions = useMemo(() => getYearOptions(), [])
+  const yearOptions = useMemo(() => getYearOptions(new Date().getFullYear(), 25), [])
   // Day picklist for Selected Days — every day inside the chosen range.
   const dayOptions = useMemo(
     () => getDayOptions(values.fromDate, values.toDate),
@@ -106,7 +106,7 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
       <div className="comparison-toolbar__fields">
         {fields.year ? (
           <SelectInput
-            label="Year"
+            label={fields.comparisonYear ? 'Comparison A Year' : 'Year'}
             name="year"
             value={values.year}
             onChange={onChange}
@@ -132,12 +132,36 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
 
         {fields.month ? (
           <SelectInput
-            label="Month"
+            label={fields.comparisonMonth ? 'Comparison A Month' : 'Month'}
             name="month"
             value={values.month}
             onChange={onChange}
             options={monthOptions}
             error={errors.month}
+            placeholder="Select month"
+          />
+        ) : null}
+
+        {fields.comparisonYear ? (
+          <SelectInput
+            label="Comparison B Year"
+            name="comparisonYear"
+            value={values.comparisonYear}
+            onChange={onChange}
+            options={yearOptions}
+            error={errors.comparisonYear}
+            placeholder="Select year"
+          />
+        ) : null}
+
+        {fields.comparisonMonth ? (
+          <SelectInput
+            label="Comparison B Month"
+            name="comparisonMonth"
+            value={values.comparisonMonth}
+            onChange={onChange}
+            options={monthOptions}
+            error={errors.comparisonMonth}
             placeholder="Select month"
           />
         ) : null}

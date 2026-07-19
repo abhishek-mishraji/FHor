@@ -68,6 +68,20 @@ export const validateComparisonForm = (values) => {
       break
 
     case COMPARISON_MODES.DEPARTMENT:
+      if (!values.year) {
+        errors.year = 'Select a year'
+      }
+      if (!values.month) {
+        errors.month = 'Select a month'
+      }
+      if (!values.comparisonYear) {
+        errors.comparisonYear = 'Select a comparison year'
+      }
+      if (!values.comparisonMonth) {
+        errors.comparisonMonth = 'Select a comparison month'
+      }
+      break
+
     case COMPARISON_MODES.METRIC:
       if (!values.year) {
         errors.year = 'Select a year'

@@ -249,7 +249,10 @@ const composeYearOverYear = async (values, fetcher, isAdmin) => {
 
 const composeDepartment = async (values, fetcher, isAdmin, { departmentNames } = {}) => {
   const metrics = values.metrics
-  const previous = previousMonthOf(values.month, values.year)
+  const comparisonPeriod = {
+    month: Number(values.comparisonMonth),
+    year: Number(values.comparisonYear),
+  }
   const [currentResponse, previousResponse] = await Promise.all([
     fetcher(
       buildParams(
@@ -265,7 +268,11 @@ const composeDepartment = async (values, fetcher, isAdmin, { departmentNames } =
         values,
         isAdmin,
         metrics,
-        { groupBy: 'DEPARTMENT', month: previous.month, year: [previous.year] },
+        {
+          groupBy: 'DEPARTMENT',
+          month: comparisonPeriod.month,
+          year: [comparisonPeriod.year],
+        },
         { includeDepartment: false },
       ),
     ),
@@ -291,13 +298,13 @@ const composeDepartment = async (values, fetcher, isAdmin, { departmentNames } =
     rowDimension: 'Department',
     columnGroups: metricColumnGroups(metrics),
     currentHeader: formatMonthTitle(values.month, values.year),
-    previousHeader: formatMonthTitle(previous.month, previous.year),
+    previousHeader: formatMonthTitle(comparisonPeriod.month, comparisonPeriod.year),
     summaryEnabled: true,
-    title: `Departments — ${formatMonthTitle(values.month, values.year)} vs ${formatMonthTitle(previous.month, previous.year)}`,
+    title: `Departments — ${formatMonthTitle(values.month, values.year)} vs ${formatMonthTitle(comparisonPeriod.month, comparisonPeriod.year)}`,
     rows: departmentIds.map((departmentId) => ({
       id: departmentId,
       label: departmentNames?.get(departmentId) || departmentId,
-      previousRef: formatMonthTitle(previous.month, previous.year),
+      previousRef: formatMonthTitle(comparisonPeriod.month, comparisonPeriod.year),
       toneMetric: null,
       cells: buildCells(metrics, currentByDept.get(departmentId), previousByDept.get(departmentId)),
     })),
