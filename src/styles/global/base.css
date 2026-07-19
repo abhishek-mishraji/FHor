@@ -176,6 +176,23 @@ ul {
   color: #F8FAFC;
 }
 
+.app-sidebar__link--logout {
+  width: 100%;
+  border: 1px solid rgba(248, 250, 252, 0.12);
+  background: rgba(248, 250, 252, 0.04);
+  color: #FDA4AF;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.app-sidebar__link--logout:hover {
+  background: rgba(239, 68, 68, 0.16);
+  color: #FECDD3;
+  border-color: rgba(248, 113, 113, 0.32);
+}
+
 .app-sidebar__link--active {
   background: rgba(59, 130, 246, 0.15);
   color: #93C5FD;
