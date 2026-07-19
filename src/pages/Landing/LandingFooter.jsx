@@ -26,7 +26,7 @@ const FOOTER_COLUMNS = [
   {
     title: "Company",
     links: [
-      { label: "About Us", to: ROUTES.about },
+      { label: "About Us", href: "#about" },
       { label: "Our Process", to: ROUTES.landing },
       { label: "Testimonials", to: ROUTES.landing },
       { label: "Careers" },
@@ -57,6 +57,8 @@ const LandingFooter = () => (
               <li key={link.label}>
                 {link.to ? (
                   <Link to={link.to}>{link.label}</Link>
+                ) : link.href ? (
+                  <a href={link.href}>{link.label}</a>
                 ) : (
                   <a href={CONTACT_MAILTO}>{link.label}</a>
                 )}
