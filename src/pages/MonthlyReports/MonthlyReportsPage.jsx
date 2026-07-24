@@ -1,161 +1,320 @@
-import { useCallback, useContext, useEffect, useMemo, useState } from 'react'
-import { AppContext } from '../../context/appContext'
-import PageHeader from '../../components/common/PageHeader'
-import AsyncState from '../../components/common/AsyncState'
-import DataTable from '../../components/common/DataTable'
-import PaginationBar from '../../components/common/PaginationBar'
-import MultiSelectInput from '../../components/forms/MultiSelectInput'
-import SelectInput from '../../components/forms/SelectInput'
-import TextInput from '../../components/forms/TextInput'
-import FileInput from '../../components/forms/FileInput'
-import Button from '../../components/ui/Button'
-import Modal from '../../components/ui/Modal'
-import { useApi } from '../../hooks/useApi'
-import { usePermissions } from '../../hooks/usePermissions'
-import { useTable } from '../../hooks/useTable'
-import clientService from '../../services/clientService'
-import monthlyReportService from '../../services/monthlyReportService'
-import storeService from '../../services/storeService'
-import { formatMonthYear, getMonthOptions, getYearOptions } from '../../utils/dateUtils'
-import { handleServiceError } from '../../utils/errorHandler'
-import { formatCurrency, formatNumber } from '../../utils/numberUtils'
-import { buildExportMatrix, exportCsv, exportExcel, exportPdf } from '../../utils/exportUtils'
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { AppContext } from "../../context/appContext";
+import PageHeader from "../../components/common/PageHeader";
+import AsyncState from "../../components/common/AsyncState";
+import DataTable from "../../components/common/DataTable";
+import PaginationBar from "../../components/common/PaginationBar";
+import MultiSelectInput from "../../components/forms/MultiSelectInput";
+import SelectInput from "../../components/forms/SelectInput";
+import TextInput from "../../components/forms/TextInput";
+import FileInput from "../../components/forms/FileInput";
+import Button from "../../components/ui/Button";
+import Modal from "../../components/ui/Modal";
+import { useApi } from "../../hooks/useApi";
+import { usePermissions } from "../../hooks/usePermissions";
+import { useTable } from "../../hooks/useTable";
+import clientService from "../../services/clientService";
+import monthlyReportService from "../../services/monthlyReportService";
+import storeService from "../../services/storeService";
+import {
+  formatMonthYear,
+  getMonthOptions,
+  getYearOptions,
+} from "../../utils/dateUtils";
+import { handleServiceError } from "../../utils/errorHandler";
+import { formatCurrency, formatNumber } from "../../utils/numberUtils";
+import {
+  buildExportMatrix,
+  exportCsv,
+  exportExcel,
+  exportPdf,
+} from "../../utils/exportUtils";
 import {
   validateMonthlyReportForm,
   validateMonthlyUploadForm,
-} from '../../validations/reportValidation'
-import '../../page-styles/MonthlyReports/MonthlyReports.css'
+} from "../../validations/reportValidation";
+import "../../page-styles/MonthlyReports/MonthlyReports.css";
 
-const monthOptions = getMonthOptions()
-const yearOptions = getYearOptions(new Date().getFullYear(), 3)
+const monthOptions = getMonthOptions();
+const yearOptions = getYearOptions(new Date().getFullYear(), 8);
 
 // ── Column definitions ─────────────────────────────────────────────────────
 
 const ALL_COLUMNS = [
-  { key: 'storeName',      header: 'Store',      sticky: true, render: (r) => r.storeName ?? '—' },
-  { key: 'period',         header: 'Period',      sticky: true, render: (r) => formatMonthYear(r.reportMonth, r.reportYear) },
-  { key: 'departmentName', header: 'Department',  render: (r) => r.departmentName || 'N/A' },
-  { key: 'gross',          header: 'Gross',       render: (r) => formatCurrency(r.gross) },
-  { key: 'discount',       header: 'Discount',    render: (r) => formatCurrency(r.discount) },
-  { key: 'promotion',      header: 'Promotion',   render: (r) => formatCurrency(r.promotion) },
-  { key: 'refund',         header: 'Refund',      render: (r) => formatCurrency(r.refund) },
-  { key: 'voidAmount',     header: 'Void amount', render: (r) => formatCurrency(r.voidAmount) },
-  { key: 'netSales',       header: 'Net sales',   render: (r) => formatCurrency(r.netSales) },
-]
+  {
+    key: "storeName",
+    header: "Store",
+    sticky: true,
+    render: (r) => r.storeName ?? "—",
+  },
+  {
+    key: "period",
+    header: "Period",
+    sticky: true,
+    render: (r) => formatMonthYear(r.reportMonth, r.reportYear),
+  },
+  {
+    key: "departmentName",
+    header: "Department",
+    render: (r) => r.departmentName || "N/A",
+  },
+  { key: "gross", header: "Gross", render: (r) => formatCurrency(r.gross) },
+  {
+    key: "discount",
+    header: "Discount",
+    render: (r) => formatCurrency(r.discount),
+  },
+  {
+    key: "promotion",
+    header: "Promotion",
+    render: (r) => formatCurrency(r.promotion),
+  },
+  { key: "refund", header: "Refund", render: (r) => formatCurrency(r.refund) },
+  {
+    key: "voidAmount",
+    header: "Void amount",
+    render: (r) => formatCurrency(r.voidAmount),
+  },
+  {
+    key: "netSales",
+    header: "Net sales",
+    render: (r) => formatCurrency(r.netSales),
+  },
+];
 
-const DEFAULT_VISIBLE_KEYS = ['storeName', 'period', 'departmentName', 'gross', 'netSales']
+const DEFAULT_VISIBLE_KEYS = [
+  "storeName",
+  "period",
+  "departmentName",
+  "gross",
+  "netSales",
+];
 
 // ── Saved views helpers ────────────────────────────────────────────────────
 
-const SAVED_VIEWS_KEY = 'mr_saved_views'
+const SAVED_VIEWS_KEY = "mr_saved_views";
 
 const loadSavedViews = () => {
-  try { return JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY) || '[]') } catch { return [] }
-}
+  try {
+    return JSON.parse(localStorage.getItem(SAVED_VIEWS_KEY) || "[]");
+  } catch {
+    return [];
+  }
+};
 
 const persistViews = (views) => {
-  try { localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(views)) } catch {}
-}
+  try {
+    localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(views));
+  } catch {}
+};
 
 // ── Statics ────────────────────────────────────────────────────────────────
 
 const initialFormValues = {
-  storeId: '',
-  reportMonth: '',
-  reportYear: '',
-  departmentId: '',
-  departmentName: '',
-  gross: '',
-  discount: '',
-  promotion: '',
-  refund: '',
-  voidAmount: '',
-  netSales: '',
-}
+  storeId: "",
+  reportMonth: "",
+  reportYear: "",
+  departmentId: "",
+  departmentName: "",
+  gross: "",
+  discount: "",
+  promotion: "",
+  refund: "",
+  voidAmount: "",
+  netSales: "",
+};
 
 const initialUploadValues = {
-  storeId: '',
-  reportMonth: '',
-  reportYear: '',
+  storeId: "",
+  reportMonth: "",
+  reportYear: "",
   file: null,
-}
+};
 
-const SEARCH_FIELDS = ['storeName', 'departmentName', 'reportMonth', 'reportYear']
+const SEARCH_FIELDS = [
+  "storeName",
+  "departmentName",
+  "reportMonth",
+  "reportYear",
+];
 const sortByPeriod = (left, right) =>
   Number(right.reportYear) - Number(left.reportYear) ||
-  Number(right.reportMonth) - Number(left.reportMonth)
+  Number(right.reportMonth) - Number(left.reportMonth);
 
 const numericFields = [
-  ['gross',      'Gross'],
-  ['discount',   'Discount'],
-  ['promotion',  'Promotion'],
-  ['refund',     'Refund'],
-  ['voidAmount', 'Void amount'],
-  ['netSales',   'Net sales'],
-]
+  ["gross", "Gross"],
+  ["discount", "Discount"],
+  ["promotion", "Promotion"],
+  ["refund", "Refund"],
+  ["voidAmount", "Void amount"],
+  ["netSales", "Net sales"],
+];
 
 // ── SVG icons ─────────────────────────────────────────────────────────────
 
-const IconFilter  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="11" y1="18" x2="13" y2="18" /></svg>
-const IconChevron = ({ open }) => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`mr-filter-bar__chevron${open ? ' mr-filter-bar__chevron--open' : ''}`}><path d="M6 9l6 6 6-6" /></svg>
-const IconColumns = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
-const IconTable   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" /></svg>
-const IconCards   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="2" y="3" width="9" height="9" rx="1" /><rect x="13" y="3" width="9" height="9" rx="1" /><rect x="2" y="13" width="9" height="9" rx="1" /><rect x="13" y="13" width="9" height="9" rx="1" /></svg>
-const IconSplit   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="12" y1="3" x2="12" y2="21" /></svg>
-const IconEmpty   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" /><line x1="3" y1="9" x2="21" y2="9" /><line x1="3" y1="15" x2="21" y2="15" /><line x1="9" y1="9" x2="9" y2="21" /></svg>
+const IconFilter = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <line x1="4" y1="6" x2="20" y2="6" />
+    <line x1="8" y1="12" x2="16" y2="12" />
+    <line x1="11" y1="18" x2="13" y2="18" />
+  </svg>
+);
+const IconChevron = ({ open }) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={`mr-filter-bar__chevron${open ? " mr-filter-bar__chevron--open" : ""}`}
+  >
+    <path d="M6 9l6 6 6-6" />
+  </svg>
+);
+const IconColumns = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+  </svg>
+);
+const IconTable = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <line x1="3" y1="15" x2="21" y2="15" />
+    <line x1="9" y1="9" x2="9" y2="21" />
+  </svg>
+);
+const IconCards = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="2" y="3" width="9" height="9" rx="1" />
+    <rect x="13" y="3" width="9" height="9" rx="1" />
+    <rect x="2" y="13" width="9" height="9" rx="1" />
+    <rect x="13" y="13" width="9" height="9" rx="1" />
+  </svg>
+);
+const IconSplit = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="12" y1="3" x2="12" y2="21" />
+  </svg>
+);
+const IconEmpty = () => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="3" width="18" height="18" rx="2" />
+    <line x1="3" y1="9" x2="21" y2="9" />
+    <line x1="3" y1="15" x2="21" y2="15" />
+    <line x1="9" y1="9" x2="9" y2="21" />
+  </svg>
+);
 
 const VIEW_MODES = [
-  { value: 'table', label: 'Table', Icon: IconTable },
-  { value: 'card',  label: 'Cards', Icon: IconCards },
-  { value: 'split', label: 'Split', Icon: IconSplit },
-]
+  { value: "table", label: "Table", Icon: IconTable },
+  { value: "card", label: "Cards", Icon: IconCards },
+  { value: "split", label: "Split", Icon: IconSplit },
+];
 
 // ── Component ──────────────────────────────────────────────────────────────
 
 function MonthlyReportsPage() {
-  const { notify, selectedStoreId, setSelectedStoreId } = useContext(AppContext)
-  const { isAdmin, can } = usePermissions()
+  const { notify, selectedStoreId, setSelectedStoreId } =
+    useContext(AppContext);
+  const { isAdmin, can } = usePermissions();
 
   // ── Business state ──────────────────────────────────────────────────────
-  const [searchTerm,    setSearchTerm]   = useState('')
-  const [filters,       setFilters]      = useState({ storeId: '', clientId: '', year: '', months: [] })
-  const [selectedReport, setSelectedReport] = useState(null)
-  const [formValues,    setFormValues]   = useState(initialFormValues)
-  const [formErrors,    setFormErrors]   = useState({})
-  const [uploadValues,  setUploadValues] = useState(initialUploadValues)
-  const [uploadErrors,  setUploadErrors] = useState({})
-  const [isModalOpen,   setIsModalOpen]  = useState(false)
-  const [submitting,    setSubmitting]   = useState(false)
-  const [uploading,     setUploading]    = useState(false)
-  const [fileInputKey,  setFileInputKey] = useState(0)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState({
+    storeId: "",
+    clientId: "",
+    year: "",
+    months: [],
+  });
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [formValues, setFormValues] = useState(initialFormValues);
+  const [formErrors, setFormErrors] = useState({});
+  const [uploadValues, setUploadValues] = useState(initialUploadValues);
+  const [uploadErrors, setUploadErrors] = useState({});
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
 
   // ── UI-only state ───────────────────────────────────────────────────────
-  const [viewMode,        setViewMode]        = useState('table')
-  const [visibleKeys,     setVisibleKeys]     = useState(DEFAULT_VISIBLE_KEYS)
-  const [columnPanelOpen, setColumnPanelOpen] = useState(false)
-  const [columnSearch,    setColumnSearch]    = useState('')
-  const [filterOpen,      setFilterOpen]      = useState(false)
-  const [savedViews,      setSavedViews]      = useState(loadSavedViews)
-  const [saveViewName,    setSaveViewName]    = useState('')
-  const [isDetailOpen,    setIsDetailOpen]    = useState(false)
-  const [exporting,       setExporting]       = useState(false)
+  const [viewMode, setViewMode] = useState("table");
+  const [visibleKeys, setVisibleKeys] = useState(DEFAULT_VISIBLE_KEYS);
+  const [columnPanelOpen, setColumnPanelOpen] = useState(false);
+  const [columnSearch, setColumnSearch] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [savedViews, setSavedViews] = useState(loadSavedViews);
+  const [saveViewName, setSaveViewName] = useState("");
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // ── Queries ─────────────────────────────────────────────────────────────
   const storesQuery = useApi(
     () => (isAdmin ? storeService.getStores() : storeService.getClientStores()),
     { initialData: [] },
-  )
+  );
 
   const clientsQuery = useApi(() => clientService.getClients(), {
     auto: isAdmin,
     initialData: [],
-  })
+  });
 
   useEffect(() => {
     if (!selectedStoreId && storesQuery.data?.length && !isAdmin) {
-      setSelectedStoreId(String(storesQuery.data[0].storeId))
+      setSelectedStoreId(String(storesQuery.data[0].storeId));
     }
-  }, [isAdmin, selectedStoreId, setSelectedStoreId, storesQuery.data])
+  }, [isAdmin, selectedStoreId, setSelectedStoreId, storesQuery.data]);
 
   const reportsQuery = useApi(
     () => {
@@ -167,52 +326,70 @@ function MonthlyReportsPage() {
           storeId: filters.storeId,
           clientId: filters.clientId,
           year: filters.year,
-          month: filters.months.length === 1 ? filters.months[0] : '',
-        })
+          month: filters.months.length === 1 ? filters.months[0] : "",
+        });
       }
-      if (!selectedStoreId) return Promise.resolve([])
-      return monthlyReportService.getClientReportsByStore(selectedStoreId)
+      if (!selectedStoreId) return Promise.resolve([]);
+      return monthlyReportService.getClientReportsByStore(selectedStoreId);
     },
     {
       initialData: [],
       deps: isAdmin
-        ? [filters.storeId, filters.clientId, filters.year, filters.months, isAdmin]
+        ? [
+            filters.storeId,
+            filters.clientId,
+            filters.year,
+            filters.months,
+            isAdmin,
+          ]
         : [isAdmin, selectedStoreId],
       onError: (requestError) => {
-        const details = handleServiceError(requestError)
-        notify({ type: 'error', title: 'Monthly reports load failed', message: details.message })
+        const details = handleServiceError(requestError);
+        notify({
+          type: "error",
+          title: "Monthly reports load failed",
+          message: details.message,
+        });
       },
     },
-  )
+  );
 
   // openEditModal declared before tableColumns to avoid TDZ
   const openEditModal = useCallback((report) => {
-    setSelectedReport(report)
+    setSelectedReport(report);
     setFormValues(
       numericFields.reduce(
-        (acc, [field]) => ({ ...acc, [field]: report[field] ?? '' }),
+        (acc, [field]) => ({ ...acc, [field]: report[field] ?? "" }),
         {
           storeId: String(report.storeId),
           reportMonth: String(report.reportMonth),
           reportYear: String(report.reportYear),
-          departmentId: report.departmentId ?? '',
-          departmentName: report.departmentName ?? '',
+          departmentId: report.departmentId ?? "",
+          departmentName: report.departmentName ?? "",
         },
       ),
-    )
-    setFormErrors({})
-    setIsModalOpen(true)
-  }, [])
+    );
+    setFormErrors({});
+    setIsModalOpen(true);
+  }, []);
 
   const storeOptions = useMemo(
-    () => (storesQuery.data || []).map((s) => ({ label: s.storeName, value: String(s.storeId) })),
+    () =>
+      (storesQuery.data || []).map((s) => ({
+        label: s.storeName,
+        value: String(s.storeId),
+      })),
     [storesQuery.data],
-  )
+  );
 
   const clientOptions = useMemo(
-    () => (clientsQuery.data || []).map((c) => ({ label: c.fullName, value: String(c.clientId) })),
+    () =>
+      (clientsQuery.data || []).map((c) => ({
+        label: c.fullName,
+        value: String(c.clientId),
+      })),
     [clientsQuery.data],
-  )
+  );
 
   // Store owner lookup for the PDF export's Client/Store grouping — display only.
   const storeMetaById = useMemo(
@@ -224,42 +401,45 @@ function MonthlyReportsPage() {
         ]),
       ),
     [storesQuery.data],
-  )
+  );
 
   const uniqueStores = useMemo(
     () => new Set((reportsQuery.data || []).map((r) => r.storeId)).size,
     [reportsQuery.data],
-  )
+  );
 
   const visibleColumnDefs = useMemo(
     () => ALL_COLUMNS.filter((c) => visibleKeys.includes(c.key)),
     [visibleKeys],
-  )
+  );
 
   const tableColumns = useMemo(() => {
     const cols = visibleColumnDefs.map((col) => ({
       key: col.key,
       header: col.header,
       render: col.render,
-    }))
+    }));
     if (isAdmin) {
       cols.push({
-        key: 'actions',
-        header: '',
+        key: "actions",
+        header: "",
         render: (row) => (
           <Button
             type="button"
             variant="ghost"
             size="sm"
-            onClick={(e) => { e.stopPropagation(); openEditModal(row) }}
+            onClick={(e) => {
+              e.stopPropagation();
+              openEditModal(row);
+            }}
           >
             Edit
           </Button>
         ),
-      })
+      });
     }
-    return cols
-  }, [visibleColumnDefs, isAdmin, openEditModal])
+    return cols;
+  }, [visibleColumnDefs, isAdmin, openEditModal]);
 
   // Client reports are fetched per store without server-side month filters,
   // and the admin API only narrows by a single month (see reportsQuery above),
@@ -267,225 +447,269 @@ function MonthlyReportsPage() {
   const monthsFilterFn = useCallback(
     (row) => filters.months.includes(Number(row.reportMonth)),
     [filters.months],
-  )
+  );
 
-  const { page, totalItems, totalPages, pageItems, pageSize, setPage, setPageSize, filteredData } =
-    useTable({
-      data: reportsQuery.data || [],
-      searchTerm,
-      searchFields: SEARCH_FIELDS,
-      filterFn: filters.months.length ? monthsFilterFn : null,
-      sortFn: sortByPeriod,
-    })
+  const {
+    page,
+    totalItems,
+    totalPages,
+    pageItems,
+    pageSize,
+    setPage,
+    setPageSize,
+    filteredData,
+  } = useTable({
+    data: reportsQuery.data || [],
+    searchTerm,
+    searchFields: SEARCH_FIELDS,
+    filterFn: filters.months.length ? monthsFilterFn : null,
+    sortFn: sortByPeriod,
+  });
 
   // ── Event handlers ──────────────────────────────────────────────────────
 
   const handleFilterChange = (event) => {
-    const { name, value } = event.target
-    setFilters((f) => ({ ...f, [name]: value }))
-  }
+    const { name, value } = event.target;
+    setFilters((f) => ({ ...f, [name]: value }));
+  };
 
   const handleFormChange = (event) => {
-    const { name, value } = event.target
-    setFormValues((v) => ({ ...v, [name]: value }))
-  }
+    const { name, value } = event.target;
+    setFormValues((v) => ({ ...v, [name]: value }));
+  };
 
   const handleUploadChange = (event) => {
-    const { name, value, files } = event.target
-    setUploadValues((v) => ({ ...v, [name]: files ? files[0] : value }))
-  }
+    const { name, value, files } = event.target;
+    setUploadValues((v) => ({ ...v, [name]: files ? files[0] : value }));
+  };
 
   const resetFilters = () => {
-    setFilters({ storeId: '', clientId: '', year: '', months: [] })
-    setSearchTerm('')
-  }
+    setFilters({ storeId: "", clientId: "", year: "", months: [] });
+    setSearchTerm("");
+  };
 
   const openCreateModal = () => {
-    setSelectedReport(null)
+    setSelectedReport(null);
     setFormValues({
       ...initialFormValues,
-      storeId: filters.storeId || selectedStoreId || '',
-      reportMonth: filters.months.length === 1 ? String(filters.months[0]) : '',
-      reportYear: filters.year || '',
-    })
-    setFormErrors({})
-    setIsModalOpen(true)
-  }
+      storeId: filters.storeId || selectedStoreId || "",
+      reportMonth: filters.months.length === 1 ? String(filters.months[0]) : "",
+      reportYear: filters.year || "",
+    });
+    setFormErrors({});
+    setIsModalOpen(true);
+  };
 
   const closeModal = () => {
-    setSelectedReport(null)
-    setFormValues(initialFormValues)
-    setFormErrors({})
-    setIsModalOpen(false)
-  }
+    setSelectedReport(null);
+    setFormValues(initialFormValues);
+    setFormErrors({});
+    setIsModalOpen(false);
+  };
 
-  const { setData: setReportsData } = reportsQuery
+  const { setData: setReportsData } = reportsQuery;
 
   const handleSubmit = async (event) => {
-    event.preventDefault()
-    const nextErrors = validateMonthlyReportForm(formValues)
-    setFormErrors(nextErrors)
-    if (Object.keys(nextErrors).length) return
-    setSubmitting(true)
+    event.preventDefault();
+    const nextErrors = validateMonthlyReportForm(formValues);
+    setFormErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    setSubmitting(true);
     try {
       const payload = numericFields.reduce(
         (acc, [field]) => ({
           ...acc,
-          [field]: formValues[field] === '' ? null : Number(formValues[field]),
+          [field]: formValues[field] === "" ? null : Number(formValues[field]),
         }),
         {
           storeId: formValues.storeId,
           reportMonth: Number(formValues.reportMonth),
           reportYear: Number(formValues.reportYear),
-          departmentId: formValues.departmentId === '' ? null : formValues.departmentId,
+          departmentId:
+            formValues.departmentId === "" ? null : formValues.departmentId,
           departmentName: formValues.departmentName || null,
         },
-      )
+      );
       const savedReport = selectedReport
-        ? await monthlyReportService.updateReport(selectedReport.monthlyReportId, payload)
-        : await monthlyReportService.createReport(payload)
+        ? await monthlyReportService.updateReport(
+            selectedReport.monthlyReportId,
+            payload,
+          )
+        : await monthlyReportService.createReport(payload);
       setReportsData((current) =>
         !selectedReport
           ? [savedReport, ...(current || [])]
           : (current || []).map((r) =>
-              r.monthlyReportId === savedReport.monthlyReportId ? savedReport : r,
+              r.monthlyReportId === savedReport.monthlyReportId
+                ? savedReport
+                : r,
             ),
-      )
+      );
       notify({
-        type: 'success',
-        title: selectedReport ? 'Monthly report updated' : 'Monthly report created',
+        type: "success",
+        title: selectedReport
+          ? "Monthly report updated"
+          : "Monthly report created",
         message: `${savedReport.storeName} ${formatMonthYear(savedReport.reportMonth, savedReport.reportYear)} has been saved.`,
-      })
-      closeModal()
+      });
+      closeModal();
     } catch (requestError) {
-      const details = handleServiceError(requestError)
-      setFormErrors(details.fieldErrors)
-      notify({ type: 'error', title: 'Monthly report save failed', message: details.message })
+      const details = handleServiceError(requestError);
+      setFormErrors(details.fieldErrors);
+      notify({
+        type: "error",
+        title: "Monthly report save failed",
+        message: details.message,
+      });
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   const handleUploadSubmit = async (event) => {
-    event.preventDefault()
-    const nextErrors = validateMonthlyUploadForm(uploadValues)
-    setUploadErrors(nextErrors)
-    if (Object.keys(nextErrors).length) return
-    setUploading(true)
+    event.preventDefault();
+    const nextErrors = validateMonthlyUploadForm(uploadValues);
+    setUploadErrors(nextErrors);
+    if (Object.keys(nextErrors).length) return;
+    setUploading(true);
     try {
       const result = await monthlyReportService.uploadReports({
         storeId: uploadValues.storeId,
         reportMonth: Number(uploadValues.reportMonth),
         reportYear: Number(uploadValues.reportYear),
         file: uploadValues.file,
-      })
+      });
       notify({
-        type: 'success',
-        title: 'Upload complete',
-        message: `Inserted ${result.insertedRows} rows after replacing ${result.deletedRows} existing records.`,
-      })
-      setUploadValues(initialUploadValues)
-      setUploadErrors({})
-      setFileInputKey((k) => k + 1)
-      reportsQuery.execute()
+        type: "success",
+        title: "Upload complete",
+        message: `Processed ${result.totalRows} rows: inserted ${result.insertedRows}, replaced ${result.deletedRows} existing records.`,
+      });
+      setUploadValues(initialUploadValues);
+      setUploadErrors({});
+      setFileInputKey((k) => k + 1);
+      reportsQuery.execute();
     } catch (requestError) {
-      const details = handleServiceError(requestError)
-      setUploadErrors(details.fieldErrors)
-      notify({ type: 'error', title: 'Monthly upload failed', message: details.message })
+      const details = handleServiceError(requestError);
+      setUploadErrors(details.fieldErrors);
+      notify({
+        type: "error",
+        title: "Monthly upload failed",
+        message: details.message,
+      });
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   // ── Column visibility ───────────────────────────────────────────────────
 
   const toggleColumn = (key) => {
-    if (ALL_COLUMNS.find((c) => c.key === key)?.sticky) return
+    if (ALL_COLUMNS.find((c) => c.key === key)?.sticky) return;
     setVisibleKeys((keys) =>
       keys.includes(key) ? keys.filter((k) => k !== key) : [...keys, key],
-    )
-  }
+    );
+  };
 
-  const selectAllColumns = () => setVisibleKeys(ALL_COLUMNS.map((c) => c.key))
-  const clearColumns     = () => setVisibleKeys(ALL_COLUMNS.filter((c) => c.sticky).map((c) => c.key))
+  const selectAllColumns = () => setVisibleKeys(ALL_COLUMNS.map((c) => c.key));
+  const clearColumns = () =>
+    setVisibleKeys(ALL_COLUMNS.filter((c) => c.sticky).map((c) => c.key));
 
   // ── Saved views ─────────────────────────────────────────────────────────
 
   const saveCurrentView = () => {
-    const name = saveViewName.trim()
-    if (!name) return
-    const view = { id: Date.now(), name, columns: visibleKeys, viewMode }
-    const next = [...savedViews, view]
-    setSavedViews(next)
-    persistViews(next)
-    setSaveViewName('')
-    notify({ type: 'success', title: 'View saved', message: `"${name}" has been saved.` })
-  }
+    const name = saveViewName.trim();
+    if (!name) return;
+    const view = { id: Date.now(), name, columns: visibleKeys, viewMode };
+    const next = [...savedViews, view];
+    setSavedViews(next);
+    persistViews(next);
+    setSaveViewName("");
+    notify({
+      type: "success",
+      title: "View saved",
+      message: `"${name}" has been saved.`,
+    });
+  };
 
   const loadView = (view) => {
-    setVisibleKeys(view.columns)
-    setViewMode(view.viewMode)
-  }
+    setVisibleKeys(view.columns);
+    setViewMode(view.viewMode);
+  };
 
   const deleteView = (id) => {
-    const next = savedViews.filter((v) => v.id !== id)
-    setSavedViews(next)
-    persistViews(next)
-  }
+    const next = savedViews.filter((v) => v.id !== id);
+    setSavedViews(next);
+    persistViews(next);
+  };
 
   // ── Export ──────────────────────────────────────────────────────────────
 
   const handleExport = async (format) => {
     if (!filteredData.length) {
-      notify({ type: 'error', title: 'Nothing to export', message: 'No records match current filters.' })
-      return
+      notify({
+        type: "error",
+        title: "Nothing to export",
+        message: "No records match current filters.",
+      });
+      return;
     }
-    setExporting(true)
+    setExporting(true);
     try {
-      const exportCols = visibleColumnDefs.map((c) => ({ key: c.key, header: c.header, render: c.render }))
-      const matrix = buildExportMatrix(exportCols, filteredData)
-      const filename = `monthly_reports_${filters.months.length ? filters.months.join('-') : 'all'}_${filters.year || 'all'}`
-      if (format === 'csv')   exportCsv(matrix, filename)
-      if (format === 'excel') exportExcel(matrix, filename)
-      if (format === 'pdf')
+      const exportCols = visibleColumnDefs.map((c) => ({
+        key: c.key,
+        header: c.header,
+        render: c.render,
+      }));
+      const matrix = buildExportMatrix(exportCols, filteredData);
+      const filename = `monthly_reports_${filters.months.length ? filters.months.join("-") : "all"}_${filters.year || "all"}`;
+      if (format === "csv") exportCsv(matrix, filename);
+      if (format === "excel") exportExcel(matrix, filename);
+      if (format === "pdf")
         await exportPdf({
-          title: 'Monthly Reports',
+          title: "Monthly Reports",
           subtitle:
             filters.months.length === 1 && filters.year
               ? formatMonthYear(filters.months[0], filters.year)
               : filters.months.length
                 ? `${filters.months.length} months selected`
-                : 'All periods',
+                : "All periods",
           matrix,
           chartContainer: null,
-          reportType: 'Monthly',
+          reportType: "Monthly",
           rows: filteredData,
           columns: visibleColumnDefs,
           storeMeta: storeMetaById,
-        })
+        });
     } catch (err) {
-      notify({ type: 'error', title: 'Export failed', message: err?.message || 'Could not generate export.' })
+      notify({
+        type: "error",
+        title: "Export failed",
+        message: err?.message || "Could not generate export.",
+      });
     } finally {
-      setExporting(false)
+      setExporting(false);
     }
-  }
+  };
 
   // ── Derived ─────────────────────────────────────────────────────────────
 
   const filteredColumnOptions = useMemo(
-    () => ALL_COLUMNS.filter((c) => c.header.toLowerCase().includes(columnSearch.toLowerCase())),
+    () =>
+      ALL_COLUMNS.filter((c) =>
+        c.header.toLowerCase().includes(columnSearch.toLowerCase()),
+      ),
     [columnSearch],
-  )
+  );
 
-  const metricColumns = visibleColumnDefs.filter((c) => !c.sticky)
-  const hasData       = filteredData.length > 0
+  const metricColumns = visibleColumnDefs.filter((c) => !c.sticky);
+  const hasData = filteredData.length > 0;
 
   // ── JSX ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="monthly-reports-page">
       <PageHeader
-        eyebrow={isAdmin ? 'Report module' : 'Client report view'}
+        eyebrow={isAdmin ? "Report module" : "Client report view"}
         title="Monthly reports"
         description="Review departmental monthly sales, switch views, and export or upload bulk replacements."
         actions={
@@ -496,16 +720,20 @@ function MonthlyReportsPage() {
           ) : null
         }
       />
-            {/* ── Bulk upload (admin only) ── */}
-            {can('uploadMonthlyReports') && (
+      {/* ── Bulk upload (admin only) ── */}
+      {can("uploadMonthlyReports") && (
         <div className="mr-upload-box">
           <div className="mr-upload-box__header">
             <span className="mr-upload-box__title">Bulk upload</span>
             <p className="mr-upload-box__subtitle">
-              The backend replaces existing rows for the same store, month, and year during upload.
+              The backend replaces existing rows for the same store, month, and
+              year during upload.
             </p>
           </div>
-          <form className="form-grid form-grid--inline" onSubmit={handleUploadSubmit}>
+          <form
+            className="form-grid form-grid--inline"
+            onSubmit={handleUploadSubmit}
+          >
             <SelectInput
               label="Store"
               name="storeId"
@@ -532,11 +760,12 @@ function MonthlyReportsPage() {
             />
             <FileInput
               key={fileInputKey}
-              label="Excel file"
+              label="Excel file (.xls or .xlsx)"
               name="file"
-              accept=".xlsx"
+              accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               onChange={handleUploadChange}
               error={uploadErrors.file}
+              fileName={uploadValues.file?.name}
             />
             <Button type="submit" isLoading={uploading}>
               Upload replacement batch
@@ -561,7 +790,7 @@ function MonthlyReportsPage() {
           </button>
         </div>
 
-        <div className={`mr-filter-bar__body${filterOpen ? ' is-open' : ''}`}>
+        <div className={`mr-filter-bar__body${filterOpen ? " is-open" : ""}`}>
           {/* Filter fields row */}
           <div className="mr-filter-bar__row">
             <div className="mr-filter-bar__field">
@@ -642,20 +871,27 @@ function MonthlyReportsPage() {
             <div className="mr-column-selector">
               <button
                 type="button"
-                className={`mr-toolbar-btn${columnPanelOpen ? ' mr-toolbar-btn--active' : ''}`}
+                className={`mr-toolbar-btn${columnPanelOpen ? " mr-toolbar-btn--active" : ""}`}
                 onClick={() => setColumnPanelOpen((o) => !o)}
               >
                 <IconColumns />
                 Columns
                 <span className="mr-toolbar-btn__badge">
-                  {visibleKeys.filter((k) => !ALL_COLUMNS.find((c) => c.key === k)?.sticky).length}
+                  {
+                    visibleKeys.filter(
+                      (k) => !ALL_COLUMNS.find((c) => c.key === k)?.sticky,
+                    ).length
+                  }
                   /{ALL_COLUMNS.filter((c) => !c.sticky).length}
                 </span>
               </button>
 
               {columnPanelOpen && (
                 <>
-                  <div className="mr-overlay" onClick={() => setColumnPanelOpen(false)} />
+                  <div
+                    className="mr-overlay"
+                    onClick={() => setColumnPanelOpen(false)}
+                  />
                   <div className="mr-column-panel">
                     <div className="mr-column-panel__search">
                       <input
@@ -667,14 +903,26 @@ function MonthlyReportsPage() {
                       />
                     </div>
                     <div className="mr-column-panel__actions">
-                      <button type="button" className="mr-column-panel__action-btn" onClick={selectAllColumns}>All</button>
-                      <button type="button" className="mr-column-panel__action-btn" onClick={clearColumns}>None</button>
+                      <button
+                        type="button"
+                        className="mr-column-panel__action-btn"
+                        onClick={selectAllColumns}
+                      >
+                        All
+                      </button>
+                      <button
+                        type="button"
+                        className="mr-column-panel__action-btn"
+                        onClick={clearColumns}
+                      >
+                        None
+                      </button>
                     </div>
                     <div className="mr-column-panel__list">
                       {filteredColumnOptions.map((col) => (
                         <label
                           key={col.key}
-                          className={`mr-column-panel__item${col.sticky ? ' mr-column-panel__item--sticky' : ''}`}
+                          className={`mr-column-panel__item${col.sticky ? " mr-column-panel__item--sticky" : ""}`}
                         >
                           <input
                             type="checkbox"
@@ -682,8 +930,14 @@ function MonthlyReportsPage() {
                             onChange={() => toggleColumn(col.key)}
                             disabled={col.sticky}
                           />
-                          <span className="mr-column-panel__item-label">{col.header}</span>
-                          {col.sticky && <span className="mr-column-panel__always">Always</span>}
+                          <span className="mr-column-panel__item-label">
+                            {col.header}
+                          </span>
+                          {col.sticky && (
+                            <span className="mr-column-panel__always">
+                              Always
+                            </span>
+                          )}
                         </label>
                       ))}
                     </div>
@@ -694,7 +948,9 @@ function MonthlyReportsPage() {
                         placeholder="View name…"
                         value={saveViewName}
                         onChange={(e) => setSaveViewName(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && saveCurrentView()}
+                        onKeyDown={(e) =>
+                          e.key === "Enter" && saveCurrentView()
+                        }
                       />
                       <button
                         type="button"
@@ -716,7 +972,7 @@ function MonthlyReportsPage() {
                 <button
                   key={value}
                   type="button"
-                  className={`mr-view-btn${viewMode === value ? ' mr-view-btn--active' : ''}`}
+                  className={`mr-view-btn${viewMode === value ? " mr-view-btn--active" : ""}`}
                   onClick={() => setViewMode(value)}
                   title={label}
                 >
@@ -729,7 +985,7 @@ function MonthlyReportsPage() {
             {/* Export */}
             <div className="mr-export-group">
               <span className="mr-toolbar-label">Export</span>
-              {['csv', 'excel', 'pdf'].map((fmt) => (
+              {["csv", "excel", "pdf"].map((fmt) => (
                 <button
                   key={fmt}
                   type="button"
@@ -742,7 +998,11 @@ function MonthlyReportsPage() {
               ))}
             </div>
 
-            <button type="button" className="mr-toolbar-btn mr-toolbar-btn--ghost" onClick={resetFilters}>
+            <button
+              type="button"
+              className="mr-toolbar-btn mr-toolbar-btn--ghost"
+              onClick={resetFilters}
+            >
               Reset
             </button>
           </div>
@@ -754,7 +1014,11 @@ function MonthlyReportsPage() {
               <div className="mr-saved-views__list">
                 {savedViews.map((view) => (
                   <span key={view.id} className="mr-saved-views__chip">
-                    <button type="button" className="mr-saved-views__chip-name" onClick={() => loadView(view)}>
+                    <button
+                      type="button"
+                      className="mr-saved-views__chip-name"
+                      onClick={() => loadView(view)}
+                    >
                       {view.name}
                     </button>
                     <button
@@ -776,7 +1040,9 @@ function MonthlyReportsPage() {
       {/* ── Quick stats bar ── */}
       <div className="mr-stats-bar">
         <div className="mr-stats-bar__item">
-          <span className="mr-stats-bar__value">{totalItems.toLocaleString()}</span>
+          <span className="mr-stats-bar__value">
+            {totalItems.toLocaleString()}
+          </span>
           <span className="mr-stats-bar__label">Records</span>
         </div>
         {uniqueStores > 0 && (
@@ -791,7 +1057,7 @@ function MonthlyReportsPage() {
               {filters.months.length === 1 && filters.year
                 ? formatMonthYear(filters.months[0], filters.year)
                 : filters.months.length > 1
-                  ? `${filters.months.length} months${filters.year ? ` · ${filters.year}` : ''}`
+                  ? `${filters.months.length} months${filters.year ? ` · ${filters.year}` : ""}`
                   : filters.year || `Month ${filters.months[0]}`}
             </span>
             <span className="mr-stats-bar__label">Period filter</span>
@@ -809,14 +1075,17 @@ function MonthlyReportsPage() {
           emptyDescription="Try adjusting the month, year, store, or search filters."
         >
           {/* Table view */}
-          {viewMode === 'table' && (
+          {viewMode === "table" && (
             <>
               <div className="mr-table-shell">
                 <DataTable
                   columns={tableColumns}
                   rows={pageItems}
                   keyField="monthlyReportId"
-                  onRowClick={(row) => { setSelectedReport(row); setIsDetailOpen(true) }}
+                  onRowClick={(row) => {
+                    setSelectedReport(row);
+                    setIsDetailOpen(true);
+                  }}
                 />
               </div>
               <PaginationBar
@@ -831,31 +1100,47 @@ function MonthlyReportsPage() {
           )}
 
           {/* Card view */}
-          {viewMode === 'card' && (
+          {viewMode === "card" && (
             <>
               <div className="mr-card-grid">
                 {pageItems.map((report) => (
                   <div
                     key={report.monthlyReportId}
-                    className={`mr-report-card${selectedReport?.monthlyReportId === report.monthlyReportId ? ' mr-report-card--selected' : ''}`}
-                    onClick={() => { setSelectedReport(report); setIsDetailOpen(true) }}
+                    className={`mr-report-card${selectedReport?.monthlyReportId === report.monthlyReportId ? " mr-report-card--selected" : ""}`}
+                    onClick={() => {
+                      setSelectedReport(report);
+                      setIsDetailOpen(true);
+                    }}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && (setSelectedReport(report), setIsDetailOpen(true))}
+                    onKeyDown={(e) =>
+                      e.key === "Enter" &&
+                      (setSelectedReport(report), setIsDetailOpen(true))
+                    }
                   >
                     <div className="mr-report-card__header">
-                      <span className="mr-report-card__store">{report.storeName}</span>
-                      <span className="mr-report-card__date">{formatMonthYear(report.reportMonth, report.reportYear)}</span>
+                      <span className="mr-report-card__store">
+                        {report.storeName}
+                      </span>
+                      <span className="mr-report-card__date">
+                        {formatMonthYear(report.reportMonth, report.reportYear)}
+                      </span>
                     </div>
                     {report.departmentName && (
-                      <span className="mr-report-card__dept">{report.departmentName}</span>
+                      <span className="mr-report-card__dept">
+                        {report.departmentName}
+                      </span>
                     )}
                     {metricColumns.length > 0 && (
                       <div className="mr-report-card__metrics">
                         {metricColumns.map((col) => (
                           <div key={col.key} className="mr-report-card__metric">
-                            <span className="mr-report-card__metric-label">{col.header}</span>
-                            <span className="mr-report-card__metric-value">{col.render(report)}</span>
+                            <span className="mr-report-card__metric-label">
+                              {col.header}
+                            </span>
+                            <span className="mr-report-card__metric-value">
+                              {col.render(report)}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -865,7 +1150,10 @@ function MonthlyReportsPage() {
                         <button
                           type="button"
                           className="mr-card-edit-btn"
-                          onClick={(e) => { e.stopPropagation(); openEditModal(report) }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(report);
+                          }}
                         >
                           Edit
                         </button>
@@ -886,29 +1174,45 @@ function MonthlyReportsPage() {
           )}
 
           {/* Split view */}
-          {viewMode === 'split' && (
+          {viewMode === "split" && (
             <div className="mr-split-view">
               <div className="mr-split-view__left">
                 <div className="mr-card-grid mr-card-grid--compact">
                   {pageItems.map((report) => (
                     <div
                       key={report.monthlyReportId}
-                      className={`mr-report-card mr-report-card--compact${selectedReport?.monthlyReportId === report.monthlyReportId ? ' mr-report-card--selected' : ''}`}
+                      className={`mr-report-card mr-report-card--compact${selectedReport?.monthlyReportId === report.monthlyReportId ? " mr-report-card--selected" : ""}`}
                       onClick={() => setSelectedReport(report)}
                       role="button"
                       tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && setSelectedReport(report)}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && setSelectedReport(report)
+                      }
                     >
                       <div className="mr-report-card__header">
-                        <span className="mr-report-card__store">{report.storeName}</span>
-                        <span className="mr-report-card__date">{formatMonthYear(report.reportMonth, report.reportYear)}</span>
+                        <span className="mr-report-card__store">
+                          {report.storeName}
+                        </span>
+                        <span className="mr-report-card__date">
+                          {formatMonthYear(
+                            report.reportMonth,
+                            report.reportYear,
+                          )}
+                        </span>
                       </div>
                       {metricColumns.length > 0 && (
                         <div className="mr-report-card__metrics">
                           {metricColumns.slice(0, 3).map((col) => (
-                            <div key={col.key} className="mr-report-card__metric">
-                              <span className="mr-report-card__metric-label">{col.header}</span>
-                              <span className="mr-report-card__metric-value">{col.render(report)}</span>
+                            <div
+                              key={col.key}
+                              className="mr-report-card__metric"
+                            >
+                              <span className="mr-report-card__metric-label">
+                                {col.header}
+                              </span>
+                              <span className="mr-report-card__metric-value">
+                                {col.render(report)}
+                              </span>
                             </div>
                           ))}
                         </div>
@@ -931,14 +1235,25 @@ function MonthlyReportsPage() {
                   <div className="mr-detail-panel">
                     <div className="mr-detail-panel__header">
                       <div>
-                        <h3 className="mr-detail-panel__store">{selectedReport.storeName}</h3>
+                        <h3 className="mr-detail-panel__store">
+                          {selectedReport.storeName}
+                        </h3>
                         <span className="mr-detail-panel__date">
-                          {formatMonthYear(selectedReport.reportMonth, selectedReport.reportYear)}
-                          {selectedReport.departmentName && ` · ${selectedReport.departmentName}`}
+                          {formatMonthYear(
+                            selectedReport.reportMonth,
+                            selectedReport.reportYear,
+                          )}
+                          {selectedReport.departmentName &&
+                            ` · ${selectedReport.departmentName}`}
                         </span>
                       </div>
                       {isAdmin && (
-                        <Button type="button" variant="secondary" size="sm" onClick={() => openEditModal(selectedReport)}>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => openEditModal(selectedReport)}
+                        >
                           Edit
                         </Button>
                       )}
@@ -965,11 +1280,10 @@ function MonthlyReportsPage() {
       </div>
 
       {/* ── Bulk upload (admin only) ── */}
-      
 
       {/* ── Detail modal (table & card views) ── */}
       <Modal
-        isOpen={isDetailOpen && viewMode !== 'split'}
+        isOpen={isDetailOpen && viewMode !== "split"}
         title="Report details"
         onClose={() => setIsDetailOpen(false)}
       >
@@ -977,10 +1291,17 @@ function MonthlyReportsPage() {
           <>
             <div className="mr-detail-modal-header">
               <strong>{selectedReport.storeName}</strong>
-              <span>{formatMonthYear(selectedReport.reportMonth, selectedReport.reportYear)}</span>
+              <span>
+                {formatMonthYear(
+                  selectedReport.reportMonth,
+                  selectedReport.reportYear,
+                )}
+              </span>
             </div>
             {selectedReport.departmentName && (
-              <p className="mr-detail-modal-dept">{selectedReport.departmentName}</p>
+              <p className="mr-detail-modal-dept">
+                {selectedReport.departmentName}
+              </p>
             )}
             <dl className="detail-list">
               {numericFields.map(([field, label]) => (
@@ -994,7 +1315,10 @@ function MonthlyReportsPage() {
               <div className="mr-detail-modal-actions">
                 <Button
                   type="button"
-                  onClick={() => { setIsDetailOpen(false); openEditModal(selectedReport) }}
+                  onClick={() => {
+                    setIsDetailOpen(false);
+                    openEditModal(selectedReport);
+                  }}
                 >
                   Edit this report
                 </Button>
@@ -1007,7 +1331,9 @@ function MonthlyReportsPage() {
       {/* ── Create / Edit modal ── */}
       <Modal
         isOpen={isModalOpen}
-        title={selectedReport ? 'Update monthly report' : 'Create monthly report'}
+        title={
+          selectedReport ? "Update monthly report" : "Create monthly report"
+        }
         onClose={closeModal}
       >
         <form className="form-grid" onSubmit={handleSubmit}>
@@ -1063,12 +1389,12 @@ function MonthlyReportsPage() {
             />
           ))}
           <Button type="submit" isLoading={submitting}>
-            {selectedReport ? 'Save changes' : 'Create report'}
+            {selectedReport ? "Save changes" : "Create report"}
           </Button>
         </form>
       </Modal>
     </div>
-  )
+  );
 }
 
-export default MonthlyReportsPage
+export default MonthlyReportsPage;

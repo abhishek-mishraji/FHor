@@ -66,13 +66,9 @@ export const apiClient = {
   },
 
   upload(url, data, config = {}) {
-    return executeRequest('post', url, {
-      ...config,
-      data,
-      headers: {
-        'Content-Type': 'multipart/form-data',
-        ...config.headers,
-      },
-    })
-  },
+  return executeRequest('post', url, {
+    ...config,
+    data,
+  })
+},
 }

@@ -700,7 +700,13 @@ input[type="file"].form-field__control {
   color: var(--color-danger);
   font-weight: 500;
 }
-
+.form-field__file-name {
+  overflow: hidden;
+  color: var(--color-ink-muted);
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 /* ============================================================
    Data Table
    ============================================================ */
