@@ -6,6 +6,20 @@ const validateRequiredNumber = (value, label, errors, key) => {
   }
 }
 
+const validateReportMonth = (value, errors) => {
+  validateRequiredNumber(value, 'Report month', errors, 'reportMonth')
+
+  if (
+    value !== '' &&
+    value !== null &&
+    value !== undefined &&
+    !Number.isNaN(Number(value)) &&
+    (Number(value) < 1 || Number(value) > 12)
+  ) {
+    errors.reportMonth = 'Report month must be between 1 and 12.'
+  }
+}
+
 export const validateDailyReportForm = (values) => {
   const errors = {}
 
@@ -27,7 +41,7 @@ export const validateMonthlyReportForm = (values) => {
     errors.storeId = 'Store is required.'
   }
 
-  validateRequiredNumber(values.reportMonth, 'Report month', errors, 'reportMonth')
+  validateReportMonth(values.reportMonth, errors)
   validateRequiredNumber(values.reportYear, 'Report year', errors, 'reportYear')
 
   return errors
@@ -52,19 +66,32 @@ export const validateMonthlyUploadForm = (values) => {
     errors.storeId = 'Store is required.'
   }
 
-  validateRequiredNumber(values.reportMonth, 'Report month', errors, 'reportMonth')
+  validateReportMonth(values.reportMonth, errors)
   validateRequiredNumber(values.reportYear, 'Report year', errors, 'reportYear')
 
   if (!values.file) {
     errors.file = 'Excel file is required.'
-  } else {
-    const expectedName = `monthly_${values.reportMonth}_${values.reportYear}.xlsx`
+    return errors
+  }
 
-    if (!/\.xlsx$/i.test(values.file.name)) {
-      errors.file = 'Only .xlsx Excel files are accepted.'
-    } else if (values.reportMonth && values.reportYear && values.file.name !== expectedName) {
-      errors.file = `Filename must match ${expectedName}.`
-    }
+  const filenameMatch = /^monthly_(\d{1,2})_(\d{4})\.(xls|xlsx)$/i.exec(values.file.name)
+
+  if (!filenameMatch) {
+    errors.file = 'Filename must match monthly_<month>_<year>.xls or monthly_<month>_<year>.xlsx.'
+    return errors
+  }
+
+  const filenameMonth = Number(filenameMatch[1])
+  const filenameYear = Number(filenameMatch[2])
+
+  if (filenameMonth < 1 || filenameMonth > 12) {
+    errors.file = 'Filename month must be between 1 and 12.'
+  } else if (
+    values.reportMonth &&
+    values.reportYear &&
+    (filenameMonth !== Number(values.reportMonth) || filenameYear !== Number(values.reportYear))
+  ) {
+    errors.file = 'Filename month and year must match the selected report month and year.'
   }
 
   return errors
