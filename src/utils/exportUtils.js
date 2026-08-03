@@ -28,14 +28,26 @@ const escapeHtml = (value) =>
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
 
-const buildHtmlTable = ({ headers, body }) => `
+const buildHtmlTable = ({ headers, body, tones = [] }) => `
   <table border="1">
     <thead>
       <tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr>
     </thead>
     <tbody>
       ${body
-        .map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`)
+        .map((row, rowIndex) => `<tr>${row
+          .map((cell, columnIndex) => {
+            const tone = tones[rowIndex]?.[columnIndex]
+            const style =
+              tone === 'positive'
+                ? ' style="color: #15803d; font-weight: 700;"'
+                : tone === 'negative'
+                  ? ' style="color: #b91c1c; font-weight: 700;"'
+                  : ''
+
+            return `<td${style}>${escapeHtml(cell)}</td>`
+          })
+          .join('')}</tr>`)
         .join('')}
     </tbody>
   </table>
@@ -53,8 +65,10 @@ export const buildExportMatrix = (columns, rows) => ({
       return raw ?? ''
     }),
   ),
+  tones: rows.map((row) =>
+    columns.map((column) => (typeof column.tone === 'function' ? column.tone(row) : null)),
+  ),
 })
-
 export const exportCsv = ({ headers, body }, filename) => {
   const lines = [headers, ...body].map((row) => row.map(escapeCsvCell).join(','))
   const blob = new Blob([String.fromCharCode(0xfeff), lines.join('\n')], { type: 'text/csv;charset=utf-8' })
@@ -70,14 +84,14 @@ const buildSummaryCardsTable = (summaryCards) =>
     body: summaryCards.map((card) => [card.label, card.value, card.caption ?? '']),
   })
 
-export const exportExcel = ({ headers, body }, filename, { summaryCards } = {}) => {
+export const exportExcel = ({ headers, body, tones }, filename, { summaryCards } = {}) => {
   const summaryHtml = summaryCards?.length
     ? `${buildSummaryCardsTable(summaryCards)}<br/>`
     : ''
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel">
       <head><meta charset="UTF-8" /></head>
-      <body>${summaryHtml}${buildHtmlTable({ headers, body })}</body>
+      <body>${summaryHtml}${buildHtmlTable({ headers, body, tones })}</body>
     </html>
   `
   const blob = new Blob([html], { type: 'application/vnd.ms-excel' })
@@ -150,12 +164,18 @@ const loadImageAsDataUrl = async (url) => {
   }
 }
 
-const buildPdfTable = ({ headers, body }) => {
+const buildPdfTable = ({ headers, body, tones = [] }) => {
   const headerCells = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('')
   const bodyRows = body
-    .map((row, i) => {
-      const cells = row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join('')
-      return `<tr class="${i % 2 === 0 ? 'row-even' : 'row-odd'}">${cells}</tr>`
+    .map((row, rowIndex) => {
+      const cells = row
+        .map((cell, columnIndex) => {
+          const tone = tones[rowIndex]?.[columnIndex]
+          const toneClass = tone ? ` cell-${tone}` : ''
+          return `<td class="${toneClass.trim()}">${escapeHtml(cell)}</td>`
+        })
+        .join('')
+      return `<tr class="${rowIndex % 2 === 0 ? 'row-even' : 'row-odd'}">${cells}</tr>`
     })
     .join('')
   return `<table class="data-table"><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`
@@ -340,13 +360,13 @@ export const exportPdf = async ({
     ? `<div class="doc-summary">
         <span><b>Report Type:</b> ${escapeHtml(reportType)}</span>
         <span><b>Generated On:</b> ${escapeHtml(exportDateTime)}</span>
-        <span><b>Total Records:</b> ${recordCount}</span>
+       
       </div>`
     : `<div class="meta-grid">
         ${storeName ? `<span class="meta-label">Store</span>    <span class="meta-value">${escapeHtml(storeName)}</span>` : ''}
         <span class="meta-label">Period</span>   <span class="meta-value">${escapeHtml(subtitle)}</span>
         <span class="meta-label">Exported</span> <span class="meta-value">${escapeHtml(exportDateTime)}</span>
-        <span class="meta-label">Records</span>  <span class="meta-value">${recordCount}</span>
+        
       </div>`
 
   // Summary cards (comparison exports) print as a card grid above the chart.
@@ -355,8 +375,17 @@ export const exportPdf = async ({
         .map(
           (card) => `<div class="summary-card">
             <div class="summary-card__label">${escapeHtml(card.label)}</div>
-            <div class="summary-card__value">${escapeHtml(card.value)}</div>
-            ${card.caption ? `<div class="summary-card__caption">${escapeHtml(card.caption)}</div>` : ''}
+            ${card.periods?.length
+              ? `<div class="summary-card__periods">${card.periods
+                  .map(
+                    (period) => `<div class="summary-card__period">
+                      <div class="summary-card__period-label">${escapeHtml(period.label)}</div>
+                      <div class="summary-card__period-value">${escapeHtml(period.value)}</div>
+                    </div>`,
+                  )
+                  .join('')}</div>`
+              : `<div class="summary-card__value">${escapeHtml(card.value)}</div>
+                  ${card.caption ? `<div class="summary-card__caption">${escapeHtml(card.caption)}</div>` : ''}`}
           </div>`,
         )
         .join('')}</div>`
@@ -423,6 +452,8 @@ export const exportPdf = async ({
     .data-table thead tr { background: #1e3a6e; }
     .data-table th { padding: 7px 10px; font-size: 7.5pt; font-weight: 600; color: #fff; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap; }
     .data-table td { padding: 5.5px 10px; font-size: 9pt; color: #0f172a; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+    .data-table td.cell-positive { color: #15803d; font-weight: 700; }
+    .data-table td.cell-negative { color: #b91c1c; font-weight: 700; }
     .row-even { background: #fff; }
     .row-odd  { background: #f8fafc; }
 
@@ -437,6 +468,10 @@ export const exportPdf = async ({
     .summary-card__label { font-size: 7.5pt; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
     .summary-card__value { font-size: 11pt; font-weight: 700; color: #1e3a6e; }
     .summary-card__caption { font-size: 8pt; color: #475569; margin-top: 2px; }
+    .summary-card__periods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .summary-card__period { min-width: 0; padding: 6px 8px; background: #fff; border: 1px solid #d8e1ee; border-radius: 3px; }
+    .summary-card__period-label { font-size: 8.5pt; font-weight: 700; color: #1e3a6e; overflow-wrap: anywhere; }
+    .summary-card__period-value { font-size: 10.5pt; font-weight: 700; color: #0f172a; margin-top: 3px; overflow-wrap: anywhere; }
   </style>
 </head>
 <body>

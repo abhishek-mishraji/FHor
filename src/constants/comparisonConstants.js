@@ -25,20 +25,20 @@ export const COMPARISON_MODES = {
 // daily modes are the date-based mirrors of the monthly ones. Department and
 // Year-over-Year have no daily equivalent (the API rejects those groupings).
 export const COMPARISON_MODE_OPTIONS = [
-  {
-    value: COMPARISON_MODES.MONTH_OVER_MONTH,
-    reportType: REPORT_TYPES.MONTHLY,
-    label: 'Month over Month (Sequential)',
-    description:
-      'Each month of the selected year is compared with its previous month. Example: Feb vs Jan, Mar vs Feb.',
-  },
-  {
-    value: COMPARISON_MODES.ONE_VS_MANY,
-    reportType: REPORT_TYPES.MONTHLY,
-    label: 'One Month vs Many Months',
-    description:
-      'Pick a reference month and compare every selected month against it.',
-  },
+  // {
+  //   value: COMPARISON_MODES.MONTH_OVER_MONTH,
+  //   reportType: REPORT_TYPES.MONTHLY,
+  //   label: 'Month over Month (Sequential)',
+  //   description:
+  //     'Each month of the selected year is compared with its previous month. Example: Feb vs Jan, Mar vs Feb.',
+  // },
+  // {
+  //   value: COMPARISON_MODES.ONE_VS_MANY,
+  //   reportType: REPORT_TYPES.MONTHLY,
+  //   label: 'One Month vs Many Months',
+  //   description:
+  //     'Pick a reference month and compare every selected month against it.',
+  // },
   {
     value: COMPARISON_MODES.SELECTED_MONTHS,
     reportType: REPORT_TYPES.MONTHLY,
@@ -56,7 +56,7 @@ export const COMPARISON_MODE_OPTIONS = [
   {
     value: COMPARISON_MODES.DEPARTMENT,
     reportType: REPORT_TYPES.MONTHLY,
-    label: 'Department Comparison (In a Month)',
+    label: 'Department Comparison',
     description:
       'Compare all departments between any selected month/year and any other selected month/year.',
   },

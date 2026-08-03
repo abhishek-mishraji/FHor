@@ -261,6 +261,27 @@ const AnalyticsPage = () => {
         })
       : undefined;
 
+  const buildPdfSummaryCards = () =>
+    result?.summaryEnabled
+      ? summaryGroups.map((group) => {
+          const summary = computeSummary(result.rows, group.key);
+
+          return {
+            label: `TOTAL — ${group.label}`,
+            periods: [
+              {
+                label: result.currentHeader || "Current",
+                value: formatMetricValue(group.metric, summary.current.sum),
+              },
+              {
+                label: result.previousHeader || "Previous",
+                value: formatMetricValue(group.metric, summary.previous.sum),
+              },
+            ],
+          };
+        })
+      : undefined;
+
   const handleExport = async (format) => {
     if (!result) {
       return;
@@ -274,14 +295,15 @@ const AnalyticsPage = () => {
         : result.rows;
       const matrix = buildExportMatrix(columns, rowsForExport);
       const summaryCards = buildSummaryCards();
+      const pdfSummaryCards = buildPdfSummaryCards();
       const filename = `analytics-comparison-${result.mode.toLowerCase().replaceAll("_", "-")}-${new Date().toISOString().slice(0, 10)}`;
       const storeName = storeOptions.find(
         (option) => option.value === String(lastRun?.storeId),
       )?.label;
       const exportTitle =
         lastRun?.reportType === REPORT_TYPES.DAILY
-          ? "Daily Comparison"
-          : "Monthly Comparison";
+          ? "Daily Merchandise Comparison"
+          : "Monthly Merchandise Comparison";
 
       if (format === "csv") {
         exportCsv(matrix, filename);
@@ -293,7 +315,7 @@ const AnalyticsPage = () => {
           subtitle: result.title,
           storeName,
           matrix,
-          summaryCards,
+          summaryCards: pdfSummaryCards,
         });
       }
 

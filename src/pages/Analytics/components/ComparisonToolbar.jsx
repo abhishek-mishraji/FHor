@@ -1,19 +1,23 @@
-import { memo, useMemo } from 'react'
-import Button from '../../../components/ui/Button'
-import SelectInput from '../../../components/forms/SelectInput'
-import MultiSelectInput from '../../../components/forms/MultiSelectInput'
-import TextInput from '../../../components/forms/TextInput'
+import { memo, useMemo } from "react";
+import Button from "../../../components/ui/Button";
+import SelectInput from "../../../components/forms/SelectInput";
+import MultiSelectInput from "../../../components/forms/MultiSelectInput";
+import TextInput from "../../../components/forms/TextInput";
 import {
   COMPARISON_MODE_OPTIONS,
   MODE_FIELD_CONFIG,
   REPORT_TYPE_OPTIONS,
-} from '../../../constants/comparisonConstants'
-import { getDayOptions, getMonthOptions, getYearOptions } from '../../../utils/dateUtils'
-import AggregationSelector from './AggregationSelector'
-import ComparisonTypeSelector from './ComparisonTypeSelector'
-import MetricSelector from './MetricSelector'
+} from "../../../constants/comparisonConstants";
+import {
+  getDayOptions,
+  getMonthOptions,
+  getYearOptions,
+} from "../../../utils/dateUtils";
+import AggregationSelector from "./AggregationSelector";
+import ComparisonTypeSelector from "./ComparisonTypeSelector";
+import MetricSelector from "./MetricSelector";
 
-const monthOptions = getMonthOptions()
+const monthOptions = getMonthOptions();
 
 // Sticky filter bar. Which fields render is driven per comparison mode by
 // MODE_FIELD_CONFIG so every mode only shows what it actually uses.
@@ -33,20 +37,26 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
   collapsed = false,
   onExpand,
 }) {
-  const fields = MODE_FIELD_CONFIG[values.mode] || {}
-  const yearOptions = useMemo(() => getYearOptions(new Date().getFullYear(), 25), [])
+  const fields = MODE_FIELD_CONFIG[values.mode] || {};
+  const yearOptions = useMemo(
+    () => getYearOptions(new Date().getFullYear(), 25),
+    [],
+  );
   // Day picklist for Selected Days — every day inside the chosen range.
   const dayOptions = useMemo(
     () => getDayOptions(values.fromDate, values.toDate),
     [values.fromDate, values.toDate],
-  )
+  );
 
   if (collapsed) {
     const summaryChips = [
-      storeOptions.find((option) => option.value === String(values.storeId))?.label,
-      REPORT_TYPE_OPTIONS.find((option) => option.value === values.reportType)?.label,
-      COMPARISON_MODE_OPTIONS.find((option) => option.value === values.mode)?.label,
-    ].filter(Boolean)
+      storeOptions.find((option) => option.value === String(values.storeId))
+        ?.label,
+      REPORT_TYPE_OPTIONS.find((option) => option.value === values.reportType)
+        ?.label,
+      COMPARISON_MODE_OPTIONS.find((option) => option.value === values.mode)
+        ?.label,
+    ].filter(Boolean);
 
     return (
       <section
@@ -63,12 +73,17 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
         </div>
         <div className="comparison-toolbar__summary-actions">
           {exportSlot}
-          <Button type="button" variant="secondary" size="sm" onClick={onExpand}>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onExpand}
+          >
             Adjust Filters
           </Button>
         </div>
       </section>
-    )
+    );
   }
 
   return (
@@ -81,7 +96,7 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
           onChange={onChange}
           options={storeOptions}
           error={errors.storeId}
-          placeholder={storesLoading ? 'Loading stores...' : 'Select a store'}
+          placeholder={storesLoading ? "Loading stores..." : "Select a store"}
           disabled={storesLoading}
         />
 
@@ -106,7 +121,7 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
       <div className="comparison-toolbar__fields">
         {fields.year ? (
           <SelectInput
-            label={fields.comparisonYear ? 'Comparison A Year' : 'Year'}
+            label={fields.comparisonYear ? "Comparison A Year" : "Year"}
             name="year"
             value={values.year}
             onChange={onChange}
@@ -132,7 +147,7 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
 
         {fields.month ? (
           <SelectInput
-            label={fields.comparisonMonth ? 'Comparison A Month' : 'Month'}
+            label={fields.comparisonMonth ? "Comparison A Month" : "Month"}
             name="month"
             value={values.month}
             onChange={onChange}
@@ -233,7 +248,9 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
             onChange={onChange}
             options={dayOptions}
             error={errors.comparisonDates}
-            placeholder={dayOptions.length ? 'Select days' : 'Pick a date range first'}
+            placeholder={
+              dayOptions.length ? "Select days" : "Pick a date range first"
+            }
             unitLabel="Day"
           />
         ) : null}
@@ -270,21 +287,34 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
           />
         ) : null}
 
-        <AggregationSelector
+        {/* <AggregationSelector
           value={values.aggregate}
           onChange={onChange}
           error={errors.aggregate}
-        />
+        /> */}
       </div>
 
       <div className="comparison-toolbar__actions">
-        <Button type="button" variant="ghost" onClick={onReset} disabled={comparing}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onReset}
+          disabled={comparing}
+        >
           Reset
         </Button>
-        <Button type="button" variant="secondary" disabled title="Saved views are coming soon">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled
+          title="Saved views are coming soon"
+        >
           Save View
         </Button>
-        <span className="comparison-toolbar__actions-spacer" aria-hidden="true" />
+        <span
+          className="comparison-toolbar__actions-spacer"
+          aria-hidden="true"
+        />
         {exportSlot}
         <Button
           type="button"
@@ -297,7 +327,7 @@ const ComparisonToolbar = memo(function ComparisonToolbar({
         </Button>
       </div>
     </section>
-  )
-})
+  );
+});
 
-export default ComparisonToolbar
+export default ComparisonToolbar;
