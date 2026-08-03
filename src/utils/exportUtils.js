@@ -386,6 +386,10 @@ export const exportPdf = async ({
                   .join('')}</div>`
               : `<div class="summary-card__value">${escapeHtml(card.value)}</div>
                   ${card.caption ? `<div class="summary-card__caption">${escapeHtml(card.caption)}</div>` : ''}`}
+            ${card.yoyPercentage !== undefined ? `<div class="summary-card__yoy">
+              <span>Total Sales YoY %</span>
+              <strong>${escapeHtml(card.yoyPercentage)}</strong>
+            </div>` : ''}
           </div>`,
         )
         .join('')}</div>`
@@ -476,6 +480,10 @@ export const exportPdf = async ({
     .summary-card__period-value { font-size: 10.5pt; font-weight: 700; color: #0f172a; margin-top: 3px; overflow-wrap: anywhere; }
     .summary-card__period--positive .summary-card__period-value { color: #15803d; }
     .summary-card__period--negative .summary-card__period-value { color: #b91c1c; }
+    .summary-card__yoy { display: inline-flex; align-items: center; gap: 8px; margin-top: 7px; padding-top: 6px; border-top: 1px solid #d8e1ee; font-size: 8pt; font-weight: 700; color: #0f172a; }
+    .summary-card__yoy strong { border-left: 1px solid #cbd5e1; font-size: 9pt; padding-left: 8px; }
+    .summary-card--positive .summary-card__yoy strong { color: #15803d; }
+    .summary-card--negative .summary-card__yoy strong { color: #b91c1c; }
   </style>
 </head>
 <body>
