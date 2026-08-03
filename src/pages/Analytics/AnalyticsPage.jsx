@@ -325,10 +325,18 @@ const AnalyticsPage = () => {
               : tone === "negative"
                 ? "positive"
                 : null;
+          const yoyPercentage =
+            difference === null || summary.previous.sum === 0
+              ? null
+              : (difference / summary.previous.sum) * 100;
 
           return {
             label: `TOTAL — ${group.label}`,
             tone,
+            yoyPercentage:
+              yoyPercentage === null
+                ? "-"
+                : `${yoyPercentage >= 0 ? "+" : ""}${yoyPercentage.toFixed(2)}%`,
             periods: [
               {
                 label: result.currentHeader || "Current",
