@@ -373,12 +373,12 @@ export const exportPdf = async ({
   const summaryCardsHtml = summaryCards?.length
     ? `<div class="summary-cards">${summaryCards
         .map(
-          (card) => `<div class="summary-card">
+          (card) => `<div class="summary-card${card.tone ? ` summary-card--${card.tone}` : ''}">
             <div class="summary-card__label">${escapeHtml(card.label)}</div>
             ${card.periods?.length
               ? `<div class="summary-card__periods">${card.periods
                   .map(
-                    (period) => `<div class="summary-card__period">
+                    (period) => `<div class="summary-card__period${period.tone ? ` summary-card__period--${period.tone}` : ''}">
                       <div class="summary-card__period-label">${escapeHtml(period.label)}</div>
                       <div class="summary-card__period-value">${escapeHtml(period.value)}</div>
                     </div>`,
@@ -465,13 +465,17 @@ export const exportPdf = async ({
 
     .summary-cards { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; break-inside: avoid; page-break-inside: avoid; }
     .summary-card { flex: 1 1 150px; min-width: 130px; border: 1px solid #e2e8f0; border-top: 3px solid #1e3a6e; border-radius: 4px; padding: 8px 10px; background: #f8fafc; }
-    .summary-card__label { font-size: 7.5pt; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .summary-card__label { font-size: 7.5pt; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .summary-card--positive { border-top-color: #15803d; }
+    .summary-card--negative { border-top-color: #b91c1c; }
     .summary-card__value { font-size: 11pt; font-weight: 700; color: #1e3a6e; }
     .summary-card__caption { font-size: 8pt; color: #475569; margin-top: 2px; }
     .summary-card__periods { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
     .summary-card__period { min-width: 0; padding: 6px 8px; background: #fff; border: 1px solid #d8e1ee; border-radius: 3px; }
     .summary-card__period-label { font-size: 8.5pt; font-weight: 700; color: #1e3a6e; overflow-wrap: anywhere; }
     .summary-card__period-value { font-size: 10.5pt; font-weight: 700; color: #0f172a; margin-top: 3px; overflow-wrap: anywhere; }
+    .summary-card__period--positive .summary-card__period-value { color: #15803d; }
+    .summary-card__period--negative .summary-card__period-value { color: #b91c1c; }
   </style>
 </head>
 <body>

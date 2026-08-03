@@ -19,6 +19,7 @@ import {
   buildComparisonColumns,
   computeSummary,
   formatMetricValue,
+  getDeltaTone,
   getVisibleColumnGroups,
 } from "../../utils/comparisonUtils";
 import {
@@ -50,6 +51,54 @@ const SUMMARY_CARD_ROWS = [
   { key: "min", label: "MINIMUM" },
   { key: "max", label: "MAXIMUM" },
 ];
+
+const buildPdfColumns = (columns, result) =>
+  columns.map((column) => {
+    if (column.key === "label" && result.rowDimension === "Department") {
+      return { ...column, header: "Department Sales" };
+    }
+
+    if (column.key.endsWith(".current")) {
+      return { ...column, header: result.currentHeader || column.header };
+    }
+
+    if (column.key.endsWith(".previous")) {
+      return { ...column, header: result.previousHeader || column.header };
+    }
+
+    if (column.key.endsWith(".difference")) {
+      return { ...column, header: "$ Difference YOY" };
+    }
+
+    if (column.key.endsWith(".pctDifference")) {
+      return { ...column, header: "% Difference YOY" };
+    }
+
+    return column;
+  });
+
+const sortRowsByPercentageDifference = (rows, columns) => {
+  const percentageColumn = columns.find((column) =>
+    column.key.endsWith(".pctDifference"),
+  );
+
+  if (!percentageColumn?.accessor) {
+    return rows;
+  }
+
+  return [...rows].sort((firstRow, secondRow) => {
+    const firstValue = percentageColumn.accessor(firstRow);
+    const secondValue = percentageColumn.accessor(secondRow);
+    const firstPercentage = Number.isFinite(firstValue)
+      ? firstValue
+      : Number.NEGATIVE_INFINITY;
+    const secondPercentage = Number.isFinite(secondValue)
+      ? secondValue
+      : Number.NEGATIVE_INFINITY;
+
+    return secondPercentage - firstPercentage;
+  });
+};
 
 const AnalyticsPage = () => {
   const { notify } = useContext(AppContext);
@@ -265,17 +314,31 @@ const AnalyticsPage = () => {
     result?.summaryEnabled
       ? summaryGroups.map((group) => {
           const summary = computeSummary(result.rows, group.key);
+          const difference =
+            summary.current.sum === null || summary.previous.sum === null
+              ? null
+              : summary.current.sum - summary.previous.sum;
+          const tone = getDeltaTone(group.metric, difference);
+          const previousTone =
+            tone === "positive"
+              ? "negative"
+              : tone === "negative"
+                ? "positive"
+                : null;
 
           return {
             label: `TOTAL — ${group.label}`,
+            tone,
             periods: [
               {
                 label: result.currentHeader || "Current",
                 value: formatMetricValue(group.metric, summary.current.sum),
+                tone,
               },
               {
                 label: result.previousHeader || "Previous",
                 value: formatMetricValue(group.metric, summary.previous.sum),
+                tone: previousTone,
               },
             ],
           };
@@ -294,6 +357,9 @@ const AnalyticsPage = () => {
         ? exportRowsRef.current
         : result.rows;
       const matrix = buildExportMatrix(columns, rowsForExport);
+      const pdfColumns = buildPdfColumns(columns, result);
+      const pdfRows = sortRowsByPercentageDifference(rowsForExport, pdfColumns);
+      const pdfMatrix = buildExportMatrix(pdfColumns, pdfRows);
       const summaryCards = buildSummaryCards();
       const pdfSummaryCards = buildPdfSummaryCards();
       const filename = `analytics-comparison-${result.mode.toLowerCase().replaceAll("_", "-")}-${new Date().toISOString().slice(0, 10)}`;
@@ -314,7 +380,7 @@ const AnalyticsPage = () => {
           title: exportTitle,
           subtitle: result.title,
           storeName,
-          matrix,
+          matrix: pdfMatrix,
           summaryCards: pdfSummaryCards,
         });
       }
