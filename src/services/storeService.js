@@ -24,6 +24,12 @@ const storeService = {
     return response.data
   },
 
+  async getStoreFuelTypes(storeId, options = {}) {
+    const response = await apiClient.get(storeEndpoints.admin.fuelTypes(storeId), options)
+
+    return response.data || []
+  },
+
   async createStore(payload, options = {}) {
     const response = await apiClient.post(storeEndpoints.admin.create, payload, options)
 
@@ -41,6 +47,16 @@ const storeService = {
       ...options,
       params: { status },
     })
+
+    return response.data
+  },
+
+  async updateStoreFuelTypes(storeId, fuelTypeIds, options = {}) {
+    const response = await apiClient.put(
+      storeEndpoints.admin.fuelTypes(storeId),
+      { fuelTypeIds },
+      options,
+    )
 
     return response.data
   },

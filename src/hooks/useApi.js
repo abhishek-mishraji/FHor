@@ -20,10 +20,13 @@ export const useApi = (
   const requestFactoryRef = useRef(requestFactory)
   const onSuccessRef = useRef(onSuccess)
   const onErrorRef = useRef(onError)
-  requestFactoryRef.current = requestFactory
-  onSuccessRef.current = onSuccess
-  onErrorRef.current = onError
   const depsSignature = JSON.stringify(deps)
+
+  useEffect(() => {
+    requestFactoryRef.current = requestFactory
+    onSuccessRef.current = onSuccess
+    onErrorRef.current = onError
+  }, [requestFactory, onSuccess, onError])
 
   const executeRequest = useCallback(async (options = {}) => {
     if (abortControllerRef.current) {

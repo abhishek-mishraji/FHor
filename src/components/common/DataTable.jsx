@@ -26,7 +26,7 @@ const DataTable = memo(function DataTable({
         <tbody>
           {rows.map((row) => (
             <tr
-              key={row[keyField]}
+              key={typeof keyField === 'function' ? keyField(row) : row[keyField]}
               onClick={onRowClick ? () => onRowClick(row) : undefined}
               className={onRowClick ? 'data-table__row--clickable' : ''}
             >

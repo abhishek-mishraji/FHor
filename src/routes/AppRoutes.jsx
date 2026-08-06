@@ -23,6 +23,13 @@ const DailyReportsPage = lazy(
 const MonthlyReportsPage = lazy(
   () => import("../pages/MonthlyReports/MonthlyReportsPage"),
 );
+const GasSalesPage = lazy(() => import("../pages/GasSales/GasSalesPage"));
+const LotterySalesPage = lazy(
+  () => import("../pages/LotterySales/LotterySalesPage"),
+);
+const FuelTypesPage = lazy(
+  () => import("../pages/FuelTypes/FuelTypesPage"),
+);
 const YearlyReportsPage = lazy(
   () => import("../pages/YearlyReports/YearlyReportsPage"),
 );
@@ -48,12 +55,15 @@ const AppRoutes = () => (
           <Route path="stores" element={<StoresPage />} />
           <Route path="reports/daily" element={<DailyReportsPage />} />
           <Route path="reports/monthly" element={<MonthlyReportsPage />} />
+          <Route path="reports/gas" element={<GasSalesPage />} />
+          <Route path="reports/lottery" element={<LotterySalesPage />} />
           <Route path="reports/yearly" element={<YearlyReportsPage />} />
           <Route path="profile" element={<ProfilePage />} />
 
           <Route element={<RoleBasedRoute allowedRoles={[ROLES.ADMIN]} />}>
             <Route path="clients" element={<ClientsPage />} />
             <Route path="store-members" element={<StoreMembersPage />} />
+            <Route path="fuel-types" element={<FuelTypesPage />} />
           </Route>
         </Route>
       </Route>

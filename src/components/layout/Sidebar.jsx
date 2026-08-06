@@ -189,6 +189,12 @@ const Sidebar = ({ isCollapsed, isMobileOpen, onNavigate }) => {
       visible: can("manageStoreMembers"),
     },
     {
+      label: "Fuel Types",
+      to: ROUTES.fuelTypes,
+      icon: "stores",
+      visible: can("manageClients"),
+    },
+    {
       label: "Daily Reports",
       to: ROUTES.dailyReports,
       icon: "dailyReports",
@@ -197,6 +203,18 @@ const Sidebar = ({ isCollapsed, isMobileOpen, onNavigate }) => {
     {
       label: "Monthly Reports",
       to: ROUTES.monthlyReports,
+      icon: "monthlyReports",
+      visible: true,
+    },
+    {
+      label: "Gas Sales",
+      to: ROUTES.gasReports,
+      icon: "monthlyReports",
+      visible: true,
+    },
+    {
+      label: "Lottery Sales",
+      to: ROUTES.lotteryReports,
       icon: "monthlyReports",
       visible: true,
     },

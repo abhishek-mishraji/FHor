@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ROUTES } from "../../constants/routeConstants";
 import { useAuth } from "../../hooks/useAuth";
@@ -50,49 +50,6 @@ const PROBLEMS = [
     icon: "pulse",
     title: "No real-time pulse",
     body: "You find out about a bad day at month-end — long after you could have done something about it.",
-  },
-];
-
-const SOLUTIONS = [
-  {
-    icon: "chart",
-    title: "Retail Analytics",
-    body: "Daily and monthly sales intelligence across every store, metric, and department.",
-  },
-  {
-    icon: "code",
-    title: "Custom Retail Software",
-    body: "Purpose-built systems shaped around how your operation actually runs.",
-  },
-  {
-    icon: "report",
-    title: "Reporting & Dashboards",
-    body: "Replace spreadsheet rituals with live dashboards your whole team reads the same way.",
-  },
-  {
-    icon: "monitor",
-    title: "Store Performance Monitoring",
-    body: "Track deposits, voids, refunds, and variances per store — flagged before they grow.",
-  },
-  {
-    icon: "stores",
-    title: "Multi-Store Management",
-    body: "One control room for every location, owner, partner, and permission.",
-  },
-  {
-    icon: "plug",
-    title: "Data Integration",
-    body: "Connect POS, ERP, and legacy systems into a single trustworthy source.",
-  },
-  {
-    icon: "brain",
-    title: "Business Intelligence",
-    body: "Rankings, trends, and year-over-year comparisons that turn data into direction.",
-  },
-  {
-    icon: "gears",
-    title: "Process Automation",
-    body: "Automate uploads, validation, and month-end workflows that drain your team today.",
   },
 ];
 
@@ -602,10 +559,6 @@ const AboutView = () => (
 function LandingPage({ initialView = "overview" }) {
   const { isAuthenticated } = useAuth();
   const [activeView, setActiveView] = useState(initialView);
-
-  useEffect(() => {
-    setActiveView(initialView);
-  }, [initialView]);
 
   const switchView = (viewId) => {
     setActiveView(viewId);

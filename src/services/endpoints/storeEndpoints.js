@@ -7,6 +7,7 @@ const storeEndpoints = {
     byId: (storeId) => `${ADMIN_STORE_PREFIX}/${storeId}`,
     update: (storeId) => `${ADMIN_STORE_PREFIX}/${storeId}`,
     updateStatus: (storeId) => `${ADMIN_STORE_PREFIX}/${storeId}/status`,
+    fuelTypes: (storeId) => `${ADMIN_STORE_PREFIX}/${storeId}/fuel-types`,
   },
 }
 

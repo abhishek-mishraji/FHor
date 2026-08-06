@@ -93,6 +93,7 @@ const STATUS_STYLE_BY_MODE = {
   [COMPARISON_MODES.SELECTED_DAYS]: 'trend',
   [COMPARISON_MODES.DAILY_METRIC]: 'trend',
   [COMPARISON_MODES.ONE_DAY_VS_RANGE]: null,
+  [COMPARISON_MODES.GAS_PERIOD_COMPARISON]: null,
 }
 
 // Count metrics (volume, no-sales, line voids) are plain quantities; everything

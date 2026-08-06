@@ -12,6 +12,12 @@ erDiagram
     STORES ||--o{ DAILY_REPORTS : "owns daily reports"
     STORES ||--o{ MONTHLY_REPORTS : "owns monthly reports"
     STORES ||--o{ YEARLY_REPORTS : "owns yearly reports"
+    STORES ||--o{ LOTTERY_SALES_REPORTS_MONTHLY : "owns lottery monthly reports"
+    STORES ||--o{ STORE_FUEL_TYPES : "supports fuel types"
+    FUEL_TYPES ||--o{ STORE_FUEL_TYPES : "available at stores"
+    STORES ||--o{ GAS_SALES_REPORTS_MONTHLY : "owns gas monthly reports"
+    GAS_SALES_REPORTS_MONTHLY ||--o{ GAS_SALES_REPORT_DETAILS : "contains fuel details"
+    FUEL_TYPES ||--o{ GAS_SALES_REPORT_DETAILS : "references fuel type"
 
     ADMIN_USERS {
         Long admin_id PK
@@ -95,6 +101,60 @@ erDiagram
         BigDecimal refund
         BigDecimal void_amount
         BigDecimal net_sales
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    LOTTERY_SALES_REPORTS_MONTHLY {
+        Long lottery_sales_report_monthly_id PK
+        Long store_id FK
+        Integer report_month
+        Integer report_year
+        BigDecimal online_sales
+        BigDecimal scratch_off_sales
+        BigDecimal online_cashes
+        BigDecimal scratch_off_cashes
+        BigDecimal commission
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    FUEL_TYPES {
+        Long fuel_type_id PK
+        String fuel_name UK
+        Boolean active
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    STORE_FUEL_TYPES {
+        Long store_fuel_type_id PK
+        Long store_id FK
+        Long fuel_type_id FK
+        Boolean active
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    GAS_SALES_REPORTS_MONTHLY {
+        Long gas_sales_report_monthly_id PK
+        Long store_id FK
+        Integer report_month
+        Integer report_year
+        BigDecimal credit_fees
+        BigDecimal total_volume_sold
+        BigDecimal net_profit_per_gallon
+        BigDecimal net_profit
+        LocalDateTime created_at
+        LocalDateTime updated_at
+    }
+
+    GAS_SALES_REPORT_DETAILS {
+        Long gas_sales_report_detail_id PK
+        Long gas_sales_report_monthly_id FK
+        Long fuel_type_id FK
+        BigDecimal volume_sold
+        BigDecimal profit_per_gallon
         LocalDateTime created_at
         LocalDateTime updated_at
     }
