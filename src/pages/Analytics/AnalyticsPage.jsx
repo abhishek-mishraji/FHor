@@ -1,6 +1,7 @@
 import { useCallback, useContext, useMemo, useRef, useState } from "react";
 import "../../page-styles/Analytics/Analytics.css";
 import PageHeader from "../../components/common/PageHeader";
+import Card from "../../components/ui/Card";
 import EmptyState from "../../components/ui/EmptyState";
 import { AppContext } from "../../context/appContext";
 import { useApi } from "../../hooks/useApi";
@@ -26,8 +27,15 @@ import {
   buildExportMatrix,
   exportCsv,
   exportExcel,
-  exportPdf,
 } from "../../utils/exportUtils";
+import { usePrintReport } from "../../components/report-print/usePrintReport";
+import {
+  formatCurrency,
+  formatNumber,
+  formatSignedCurrency,
+  formatSignedNumber,
+  formatSignedPercent,
+} from "../../utils/numberUtils";
 import { validateComparisonForm } from "../../validations/comparisonValidation";
 import ColumnSelector from "./components/ColumnSelector";
 import ComparisonTable from "./components/ComparisonTable";
@@ -50,6 +58,117 @@ const SUMMARY_CARD_ROWS = [
   { key: "min", label: "MINIMUM" },
   { key: "max", label: "MAXIMUM" },
 ];
+
+const GAS_KPI_METRICS = [
+  { key: "TOTAL_VOLUME_SOLD", label: "Total Volume Sold", format: "number" },
+  { key: "NET_PROFIT", label: "Net Profit", format: "currency" },
+  {
+    key: "NET_PROFIT_PER_GALLON",
+    label: "Net Profit / Gallon",
+    format: "gallon",
+  },
+  { key: "CREDIT_FEES", label: "Credit Card Fees", format: "currency" },
+];
+
+const formatGasValue = (format, value) => {
+  if (format === "number") {
+    return formatNumber(value);
+  }
+
+  if (format === "gallon") {
+    return value === null || value === undefined
+      ? "N/A"
+      : `$${Number(value).toFixed(3)}`;
+  }
+
+  return formatCurrency(value);
+};
+
+const formatGasDifference = (format, value) =>
+  format === "number"
+    ? formatSignedNumber(value)
+    : format === "gallon"
+      ? value === null || value === undefined
+        ? "-"
+        : `${Number(value) > 0 ? "+" : Number(value) < 0 ? "-" : ""}$${Math.abs(Number(value)).toFixed(3)}`
+      : formatSignedCurrency(value);
+
+const getGasMetricRow = (rows, metric) =>
+  rows.find((row) => row.id === metric) || null;
+
+const buildGasFuelRows = (rows) => {
+  const volumeRows = rows.filter((row) =>
+    String(row.id).startsWith("DETAIL_VOLUME_SOLD_"),
+  );
+  const profitRows = new Map(
+    rows
+      .filter((row) => String(row.id).startsWith("DETAIL_PROFIT_"))
+      .map((row) => [String(row.id).replace("DETAIL_PROFIT_", ""), row]),
+  );
+
+  const fuelRows = volumeRows.map((volumeRow) => {
+    const fuelId = String(volumeRow.id).replace("DETAIL_VOLUME_SOLD_", "");
+    const profitRow = profitRows.get(fuelId);
+    const fuelLabel = volumeRow.label
+      .replace(/^Volume Sold\s*\(/, "")
+      .replace(/\)$/, "");
+
+    return {
+      id: `fuel-${fuelId}`,
+      label: fuelLabel || volumeRow.label,
+      cells: {
+        volume: volumeRow.cells.value,
+        profit: profitRow?.cells.value || {
+          current: null,
+          previous: null,
+          difference: null,
+          pctDifference: null,
+        },
+      },
+    };
+  });
+
+  const totalVolume = getGasMetricRow(rows, "TOTAL_VOLUME_SOLD");
+  const totalProfit = getGasMetricRow(rows, "NET_PROFIT_PER_GALLON");
+
+  return [
+    ...fuelRows,
+    {
+      id: "fuel-total",
+      label: "TOTAL",
+      total: true,
+      cells: {
+        volume: totalVolume?.cells.value,
+        profit: totalProfit?.cells.value,
+      },
+    },
+  ];
+};
+
+const buildGasPdfReport = ({ result, rows, columns, storeName }) => ({
+  storeName,
+  currentPeriod: result.currentHeader || "Current",
+  comparisonPeriod: result.previousHeader || "Previous",
+  kpis: GAS_KPI_METRICS.map((metric) => {
+    const cell = getGasMetricRow(result.rows, metric.key)?.cells.value;
+
+    return {
+      label: metric.label,
+      current: formatGasValue(metric.format, cell?.current),
+      previous: formatGasValue(metric.format, cell?.previous),
+      difference: formatGasDifference(metric.format, cell?.difference),
+      percentage: formatSignedPercent(cell?.pctDifference),
+      tone: getDeltaTone(metric.key, cell?.difference),
+    };
+  }),
+  table: {
+    matrix: buildExportMatrix(columns, rows),
+    groups: [
+      { label: "Volume Sold (Gallons)", span: 4 },
+      { label: "Profit / Gallon ($)", span: 4 },
+    ],
+  },
+});
 
 const buildPdfColumns = (columns, result) =>
   columns.map((column) => {
@@ -102,6 +221,7 @@ const sortRowsByPercentageDifference = (rows, columns) => {
 const AnalyticsPage = () => {
   const { notify } = useContext(AppContext);
   const { isAdmin } = usePermissions();
+  const printReport = usePrintReport();
 
   const [filters, setFilters] = useState(buildDefaultFilters);
   const [errors, setErrors] = useState({});
@@ -362,12 +482,15 @@ const AnalyticsPage = () => {
     setExporting(true);
 
     try {
+      const gasExport = result.mode === COMPARISON_MODES.GAS_PERIOD_COMPARISON;
       const rowsForExport = exportRowsRef.current?.length
         ? exportRowsRef.current
         : result.rows;
-      const matrix = buildExportMatrix(columns, rowsForExport);
-      const pdfColumns = buildPdfColumns(columns, result);
-      const pdfRows = sortRowsByPercentageDifference(rowsForExport, pdfColumns);
+      const exportColumns = gasExport ? gasTableColumns : columns;
+      const exportRows = gasExport ? gasRows : rowsForExport;
+      const matrix = buildExportMatrix(exportColumns, exportRows);
+      const pdfColumns = buildPdfColumns(exportColumns, result);
+      const pdfRows = sortRowsByPercentageDifference(exportRows, pdfColumns);
       const pdfMatrix = buildExportMatrix(pdfColumns, pdfRows);
       const summaryCards = buildSummaryCards();
       const pdfSummaryCards = buildPdfSummaryCards();
@@ -389,12 +512,20 @@ const AnalyticsPage = () => {
       } else if (format === "excel") {
         exportExcel(matrix, filename, { summaryCards });
       } else {
-        await exportPdf({
+        await printReport({
           title: exportTitle,
           subtitle: result.title,
           storeName,
           matrix: pdfMatrix,
           summaryCards: pdfSummaryCards,
+          gasReport: gasExport
+            ? buildGasPdfReport({
+                result,
+                rows: gasRows,
+                columns: gasTableColumns,
+                storeName,
+              })
+            : undefined,
         });
       }
 
@@ -425,13 +556,104 @@ const AnalyticsPage = () => {
     result?.mode !== COMPARISON_MODES.METRIC &&
     result?.mode !== COMPARISON_MODES.YEAR_OVER_YEAR &&
     result?.mode !== COMPARISON_MODES.DAILY_METRIC;
+  const isGasComparison =
+    result?.mode === COMPARISON_MODES.GAS_PERIOD_COMPARISON;
+  const gasRows = isGasComparison ? buildGasFuelRows(result.rows) : [];
+  const gasTableColumns = isGasComparison
+    ? [
+        {
+          key: "label",
+          header: "Fuel Type",
+          sticky: true,
+          align: "left",
+          sortable: true,
+          width: 180,
+          accessor: (row) => row.label,
+          render: (row) => row.label,
+        },
+        ...[
+          {
+            key: "volume",
+            label: "Volume Sold (Gallons)",
+            format: "number",
+          },
+          { key: "profit", label: "Profit / Gallon ($)", format: "gallon" },
+        ].flatMap((group) => [
+          {
+            key: `${group.key}.current`,
+            header: result.currentHeader || "Current",
+            group: { key: group.key, label: group.label },
+            align: "right",
+            sortable: true,
+            width: 140,
+            accessor: (row) => row.cells[group.key]?.current ?? null,
+            render: (row) =>
+              formatGasValue(group.format, row.cells[group.key]?.current),
+          },
+          {
+            key: `${group.key}.previous`,
+            header: result.previousHeader || "Previous",
+            group: { key: group.key, label: group.label },
+            align: "right",
+            sortable: true,
+            width: 140,
+            accessor: (row) => row.cells[group.key]?.previous ?? null,
+            render: (row) =>
+              formatGasValue(group.format, row.cells[group.key]?.previous),
+          },
+          {
+            key: `${group.key}.difference`,
+            header: "Difference",
+            group: { key: group.key, label: group.label },
+            align: "right",
+            sortable: true,
+            width: 130,
+            accessor: (row) => row.cells[group.key]?.difference ?? null,
+            render: (row) =>
+              formatGasDifference(
+                group.format,
+                row.cells[group.key]?.difference,
+              ),
+            tone: (row) =>
+              getDeltaTone(
+                group.key === "volume"
+                  ? "TOTAL_VOLUME_SOLD"
+                  : "NET_PROFIT_PER_GALLON",
+                row.cells[group.key]?.difference,
+              ),
+          },
+          {
+            key: `${group.key}.pctDifference`,
+            header: "% Difference",
+            group: { key: group.key, label: group.label },
+            align: "right",
+            sortable: true,
+            width: 120,
+            accessor: (row) => row.cells[group.key]?.pctDifference ?? null,
+            render: (row) =>
+              formatSignedPercent(row.cells[group.key]?.pctDifference),
+            tone: (row) =>
+              getDeltaTone(
+                group.key === "volume"
+                  ? "TOTAL_VOLUME_SOLD"
+                  : "NET_PROFIT_PER_GALLON",
+                row.cells[group.key]?.difference,
+              ),
+          },
+        ]),
+      ]
+    : [];
 
   return (
     <div className="analytics">
       <PageHeader
         eyebrow="Analytics"
-        title="Report Comparison"
-        description="Compare sales performance across days, months, years, departments, and metrics."
+        title={isGasComparison ? "Gas Sales Report" : "Report Comparison"}
+        description={
+          isGasComparison
+            ? "Overview of gas sales performance and comparison."
+            : "Compare sales performance across days, months, years, departments, and metrics."
+        }
       />
 
       <ComparisonToolbar
@@ -457,27 +679,100 @@ const AnalyticsPage = () => {
 
       {showResults ? (
         <div className="analytics__results">
-          {result?.title && !comparisonQuery.error ? (
+          {!isGasComparison && result?.title && !comparisonQuery.error ? (
             <p className="analytics__result-title">{result.title}</p>
           ) : null}
 
-          <ComparisonTable
-            columns={columns}
-            rows={result?.rows || []}
-            loading={comparisonQuery.loading}
-            error={comparisonQuery.error}
-            onRetry={comparisonQuery.retry}
-            onVisibleRowsChange={handleVisibleRowsChange}
-            searchPlaceholder={`Search by ${(result?.rowDimension || "row").toLowerCase()}...`}
-            toolbar={
-              <ColumnSelector
-                columnPrefs={columnPrefs}
-                onChange={setColumnPrefs}
-                metricOptions={metricOptions}
-                showMetricSection={showMetricSection}
-              />
-            }
-          />
+          {isGasComparison && !comparisonQuery.error ? (
+            <>
+              <div
+                className="gas-comparison__kpis"
+                aria-label="Gas sales key metrics"
+              >
+                {GAS_KPI_METRICS.map((metric) => {
+                  const row = getGasMetricRow(result.rows, metric.key);
+                  const cell = row?.cells.value;
+                  const tone = getDeltaTone(metric.key, cell?.difference);
+                  const direction =
+                    cell?.difference > 0
+                      ? "up"
+                      : cell?.difference < 0
+                        ? "down"
+                        : "flat";
+
+                  return (
+                    <Card key={metric.key} className="gas-kpi-card">
+                      <p className="gas-kpi-card__label">{metric.label}</p>
+                      <div className="gas-kpi-card__main">
+                        <strong>
+                          {formatGasValue(metric.format, cell?.current)}
+                        </strong>
+                        <span
+                          className={`gas-kpi-card__delta gas-kpi-card__delta--${tone || "neutral"}`}
+                        >
+                          <span aria-hidden="true">
+                            {direction === "up"
+                              ? "↑"
+                              : direction === "down"
+                                ? "↓"
+                                : "—"}
+                          </span>{" "}
+                          {formatGasDifference(
+                            metric.format,
+                            cell?.difference,
+                          ).replace(/^[-+]/, "")}
+                        </span>
+                      </div>
+                      <div className="gas-kpi-card__meta">
+                        <span>
+                          vs {formatGasValue(metric.format, cell?.previous)}
+                        </span>
+                        <span
+                          className={`gas-kpi-card__percent gas-kpi-card__percent--${tone || "neutral"}`}
+                        >
+                          {formatSignedPercent(cell?.pctDifference)}
+                        </span>
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              <section className="gas-details" aria-label="Fuel details">
+                <header className="gas-details__header">
+                  <h2>Fuel Details</h2>
+                </header>
+                <ComparisonTable
+                  columns={gasTableColumns}
+                  rows={gasRows}
+                  loading={comparisonQuery.loading}
+                  onVisibleRowsChange={handleVisibleRowsChange}
+                  searchPlaceholder="Search fuel types..."
+                />
+                <p className="gas-details__note">
+                  <span aria-hidden="true">ⓘ</span> All amounts are in USD.
+                </p>
+              </section>
+            </>
+          ) : (
+            <ComparisonTable
+              columns={columns}
+              rows={result?.rows || []}
+              loading={comparisonQuery.loading}
+              error={comparisonQuery.error}
+              onRetry={comparisonQuery.retry}
+              onVisibleRowsChange={handleVisibleRowsChange}
+              searchPlaceholder={`Search by ${(result?.rowDimension || "row").toLowerCase()}...`}
+              toolbar={
+                <ColumnSelector
+                  columnPrefs={columnPrefs}
+                  onChange={setColumnPrefs}
+                  metricOptions={metricOptions}
+                  showMetricSection={showMetricSection}
+                />
+              }
+            />
+          )}
 
           {/* {result?.summaryEnabled && !comparisonQuery.loading && !comparisonQuery.error ? (
             <SummaryTable

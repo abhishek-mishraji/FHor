@@ -31,7 +31,7 @@ const ALL_COLUMNS = [
   },
   {
     key: "creditFees",
-    header: "Credit fees",
+    header: "Credit Card Fees",
     render: (r) => formatCurrency(r.creditFees),
   },
   {
@@ -263,9 +263,11 @@ const GasSalesPage = () => {
         reportMonth: Number(form.reportMonth),
         reportYear: Number(form.reportYear),
         creditFees: form.creditFees === "" ? 0 : Number(form.creditFees),
-        totalVolumeSold: form.totalVolumeSold === "" ? 0 : Number(form.totalVolumeSold),
+        totalVolumeSold:
+          form.totalVolumeSold === "" ? 0 : Number(form.totalVolumeSold),
         netProfit: form.netProfit === "" ? 0 : Number(form.netProfit),
-        netProfitPerGallon: form.netProfitPerGallon === "" ? 0 : Number(form.netProfitPerGallon),
+        netProfitPerGallon:
+          form.netProfitPerGallon === "" ? 0 : Number(form.netProfitPerGallon),
         details: form.details.map((detail) => ({
           fuelTypeId: Number(detail.fuelTypeId),
           volumeSold: Number(detail.volumeSold),
@@ -451,7 +453,7 @@ const GasSalesPage = () => {
             error={errors.totalVolumeSold}
           />
           <TextInput
-            label="Net profit"
+            label="Net Profit"
             name="netProfit"
             value={form.netProfit}
             onChange={(e) =>
@@ -460,7 +462,7 @@ const GasSalesPage = () => {
             error={errors.netProfit}
           />
           <TextInput
-            label="Net profit / gallon"
+            label="Net Profit / Gallon"
             name="netProfitPerGallon"
             value={form.netProfitPerGallon}
             onChange={(e) =>
@@ -469,7 +471,7 @@ const GasSalesPage = () => {
             error={errors.netProfitPerGallon}
           />
           <TextInput
-            label="Credit fees"
+            label="Credit Card Fees"
             name="creditFees"
             value={form.creditFees}
             onChange={(e) =>
@@ -503,7 +505,7 @@ const GasSalesPage = () => {
                     error={errors[`details.${idx}.volumeSold`]}
                   />
                   <TextInput
-                    label="Profit / gal"
+                    label="Profit / Gallon"
                     name={`details.${idx}.profitPerGallon`}
                     value={d.profitPerGallon}
                     onChange={(e) =>
@@ -550,7 +552,7 @@ const GasSalesPage = () => {
               {viewReport.reportYear}
             </p>
             <p>
-              <strong>Credit fees:</strong>{" "}
+              <strong>Credit Card Fees:</strong>{" "}
               {formatCurrency(viewReport.creditFees)}
             </p>
             <p>

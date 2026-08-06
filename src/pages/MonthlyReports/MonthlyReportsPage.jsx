@@ -13,6 +13,7 @@ import Modal from "../../components/ui/Modal";
 import { useApi } from "../../hooks/useApi";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useTable } from "../../hooks/useTable";
+import { usePrintReport } from "../../components/report-print/usePrintReport";
 import clientService from "../../services/clientService";
 import monthlyReportService from "../../services/monthlyReportService";
 import storeService from "../../services/storeService";
@@ -27,7 +28,6 @@ import {
   buildExportMatrix,
   exportCsv,
   exportExcel,
-  exportPdf,
 } from "../../utils/exportUtils";
 import {
   validateMonthlyReportForm,
@@ -268,6 +268,7 @@ const VIEW_MODES = [
 // ── Component ──────────────────────────────────────────────────────────────
 
 function MonthlyReportsPage() {
+  const printReport = usePrintReport();
   const { notify, selectedStoreId, setSelectedStoreId } =
     useContext(AppContext);
   const { isAdmin, can } = usePermissions();
@@ -667,7 +668,7 @@ function MonthlyReportsPage() {
       if (format === "csv") exportCsv(matrix, filename);
       if (format === "excel") exportExcel(matrix, filename);
       if (format === "pdf")
-        await exportPdf({
+        await printReport({
           title: "Monthly Reports",
           subtitle:
             filters.months.length === 1 && filters.year
