@@ -1,0 +1,39 @@
+@media print {
+  .report-print__section,
+  .report-print__table,
+  .report-print__cards {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-print__table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  .report-print__table thead {
+    display: table-header-group;
+  }
+
+  .report-print__table tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .report-print__table th,
+  .report-print__table td {
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .report-print__footer {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

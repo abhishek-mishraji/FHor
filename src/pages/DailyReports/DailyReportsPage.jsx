@@ -11,6 +11,7 @@ import Modal from "../../components/ui/Modal";
 import { useApi } from "../../hooks/useApi";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useTable } from "../../hooks/useTable";
+import { usePrintReport } from "../../components/report-print/usePrintReport";
 import dailyReportService from "../../services/dailyReportService";
 import clientService from "../../services/clientService";
 import storeService from "../../services/storeService";
@@ -21,7 +22,6 @@ import {
   buildExportMatrix,
   exportCsv,
   exportExcel,
-  exportPdf,
 } from "../../utils/exportUtils";
 import { validateDailyReportForm } from "../../validations/reportValidation";
 import "../../page-styles/DailyReports/DailyReports.css";
@@ -303,6 +303,7 @@ const VIEW_MODES = [
 // ── Component ──────────────────────────────────────────────────────────────
 
 function DailyReportsPage() {
+  const printReport = usePrintReport();
   const { notify, selectedStoreId, setSelectedStoreId } =
     useContext(AppContext);
   const { isAdmin } = usePermissions();
@@ -639,7 +640,7 @@ function DailyReportsPage() {
       if (format === "csv") exportCsv(matrix, filename);
       if (format === "excel") exportExcel(matrix, filename);
       if (format === "pdf")
-        await exportPdf({
+        await printReport({
           title: "Daily Reports",
           subtitle: filters.from
             ? `${filters.from} to ${filters.to}`
