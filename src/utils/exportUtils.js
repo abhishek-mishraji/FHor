@@ -438,16 +438,16 @@ export const exportPdf = async ({
   const gasSummaryHtml = gasReport
     ? `<div class="gas-meta">
         <span><b>Store</b>${escapeHtml(gasReport.storeName || 'All Stores')}</span>
-        <span><b>Current Period</b>${escapeHtml(gasReport.currentPeriod)}</span>
-        <span><b>Comparison Period</b>${escapeHtml(gasReport.comparisonPeriod)}</span>
+        <span><b>Current Period</b>${escapeHtml(gasReport.comparisonPeriod)}</span>
+        <span><b>Previous Period</b>${escapeHtml(gasReport.currentPeriod)}</span>
       </div>
       <div class="gas-kpis">${gasReport.kpis
         .map(
           (card) => `<div class="gas-kpi${card.tone ? ` gas-kpi--${card.tone}` : ''}">
             <div class="gas-kpi__label">${escapeHtml(card.label)}</div>
             <div class="gas-kpi__values">
-              <div><span>Current</span><strong>${escapeHtml(card.current)}</strong></div>
-              <div><span>Previous</span><strong>${escapeHtml(card.previous)}</strong></div>
+              <div><span>Previous</span><strong>${escapeHtml(card.current)}</strong></div>
+              <div><span>Current</span><strong>${escapeHtml(card.previous)}</strong></div>
             </div>
             <div class="gas-kpi__delta"><span>Difference</span><strong>${escapeHtml(card.difference)}</strong></div>
             <div class="gas-kpi__percent"><span>% Difference</span><strong>${escapeHtml(card.percentage)}</strong></div>
