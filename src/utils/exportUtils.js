@@ -354,7 +354,6 @@ export const exportPdf = async ({
   })
 
   const isGrouped = Array.isArray(rows) && Array.isArray(columns) && Boolean(reportType)
-  const recordCount = (isGrouped ? rows.length : matrix.body.length).toLocaleString()
 
   const summaryHtml = isGrouped
     ? `<div class="doc-summary">

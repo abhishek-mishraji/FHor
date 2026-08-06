@@ -1,11 +1,15 @@
 export const REPORT_TYPES = {
   MONTHLY: 'MONTHLY',
   DAILY: 'DAILY',
+  GAS_MONTHLY: 'GAS_MONTHLY',
+  LOTTERY_MONTHLY: 'LOTTERY_MONTHLY',
 }
 
 export const REPORT_TYPE_OPTIONS = [
   { value: REPORT_TYPES.MONTHLY, label: 'Monthly Reports' },
   { value: REPORT_TYPES.DAILY, label: 'Daily Reports' },
+  { value: REPORT_TYPES.GAS_MONTHLY, label: 'Gas Sales' },
+  { value: REPORT_TYPES.LOTTERY_MONTHLY, label: 'Lottery Sales' },
 ]
 
 export const COMPARISON_MODES = {
@@ -19,19 +23,21 @@ export const COMPARISON_MODES = {
   ONE_DAY_VS_RANGE: 'ONE_DAY_VS_RANGE',
   SELECTED_DAYS: 'SELECTED_DAYS',
   DAILY_METRIC: 'DAILY_METRIC',
+  GAS_PERIOD_COMPARISON: 'GAS_PERIOD_COMPARISON',
+  LOTTERY_PERIOD_COMPARISON: 'LOTTERY_PERIOD_COMPARISON',
 }
 
 // Daily reports only support groupBy=DATE (plus STORE) in the API, so the
 // daily modes are the date-based mirrors of the monthly ones. Department and
 // Year-over-Year have no daily equivalent (the API rejects those groupings).
 export const COMPARISON_MODE_OPTIONS = [
-  // {
-  //   value: COMPARISON_MODES.MONTH_OVER_MONTH,
-  //   reportType: REPORT_TYPES.MONTHLY,
-  //   label: 'Month over Month (Sequential)',
-  //   description:
-  //     'Each month of the selected year is compared with its previous month. Example: Feb vs Jan, Mar vs Feb.',
-  // },
+  {
+    value: COMPARISON_MODES.MONTH_OVER_MONTH,
+    reportType: REPORT_TYPES.MONTHLY,
+    label: 'Month over Month (Sequential)',
+    description:
+      'Each month of the selected year is compared with its previous month. Example: Feb vs Jan, Mar vs Feb.',
+  },
   // {
   //   value: COMPARISON_MODES.ONE_VS_MANY,
   //   reportType: REPORT_TYPES.MONTHLY,
@@ -95,6 +101,20 @@ export const COMPARISON_MODE_OPTIONS = [
     description:
       'Compare all daily metrics of a selected day against the previous day.',
   },
+  {
+    value: COMPARISON_MODES.GAS_PERIOD_COMPARISON,
+    reportType: REPORT_TYPES.GAS_MONTHLY,
+    label: 'Period Comparison',
+    description:
+      'Compare selected gas metrics between two monthly periods for one store.',
+  },
+  {
+    value: COMPARISON_MODES.LOTTERY_PERIOD_COMPARISON,
+    reportType: REPORT_TYPES.LOTTERY_MONTHLY,
+    label: 'Period Comparison',
+    description:
+      'Compare selected lottery sales metrics between two monthly periods for one store.',
+  },
 ]
 
 export const MONTHLY_METRICS = [
@@ -104,6 +124,21 @@ export const MONTHLY_METRICS = [
   { key: 'promotion', label: 'Promotion' },
   { key: 'refund', label: 'Refund' },
   { key: 'voidAmount', label: 'Void Amount' },
+]
+
+export const GAS_METRICS = [
+  { key: 'CREDIT_FEES', label: 'Credit Fees' },
+  { key: 'TOTAL_VOLUME_SOLD', label: 'Total Volume Sold' },
+  { key: 'NET_PROFIT', label: 'Net Profit' },
+  { key: 'NET_PROFIT_PER_GALLON', label: 'Net Profit / Gal' },
+]
+
+export const LOTTERY_METRICS = [
+  { key: 'ONLINE_SALES', label: 'Online Sales' },
+  { key: 'SCRATCH_OFF_SALES', label: 'Scratch Off Sales' },
+  { key: 'ONLINE_CASHES', label: 'Online Cashes' },
+  { key: 'SCRATCH_OFF_CASHES', label: 'Scratch Off Cashes' },
+  { key: 'COMMISSION', label: 'Commission' },
 ]
 
 export const DAILY_METRICS = [
@@ -119,7 +154,7 @@ export const DAILY_METRICS = [
 ]
 
 export const METRIC_LABELS = Object.fromEntries(
-  [...MONTHLY_METRICS, ...DAILY_METRICS].map((metric) => [metric.key, metric.label]),
+  [...MONTHLY_METRICS, ...GAS_METRICS, ...LOTTERY_METRICS, ...DAILY_METRICS].map((metric) => [metric.key, metric.label]),
 )
 
 export const ALL_METRIC_KEYS = MONTHLY_METRICS.map((metric) => metric.key)
@@ -148,6 +183,15 @@ export const METRIC_POLARITY = {
   noSale: 'cost',
   lineVoid: 'cost',
   refunds: 'cost',
+  CREDIT_FEES: 'cost',
+  TOTAL_VOLUME_SOLD: 'gain',
+  NET_PROFIT: 'gain',
+  NET_PROFIT_PER_GALLON: 'gain',
+  ONLINE_SALES: 'gain',
+  SCRATCH_OFF_SALES: 'gain',
+  ONLINE_CASHES: 'gain',
+  SCRATCH_OFF_CASHES: 'gain',
+  COMMISSION: 'gain',
 }
 
 export const AGGREGATES = {
@@ -222,16 +266,34 @@ export const MODE_FIELD_CONFIG = {
   [COMPARISON_MODES.DAILY_METRIC]: {
     date: true,
   },
+  [COMPARISON_MODES.GAS_PERIOD_COMPARISON]: {
+    year: true,
+    month: true,
+    comparisonYear: true,
+    comparisonMonth: true,
+    metrics: true,
+  },
+  [COMPARISON_MODES.LOTTERY_PERIOD_COMPARISON]: {
+    year: true,
+    month: true,
+    comparisonYear: true,
+    comparisonMonth: true,
+    metrics: true,
+  },
 }
 
 export const DEFAULT_MODE_BY_REPORT_TYPE = {
   [REPORT_TYPES.MONTHLY]: COMPARISON_MODES.MONTH_OVER_MONTH,
   [REPORT_TYPES.DAILY]: COMPARISON_MODES.DAY_OVER_DAY,
+  [REPORT_TYPES.GAS_MONTHLY]: COMPARISON_MODES.GAS_PERIOD_COMPARISON,
+  [REPORT_TYPES.LOTTERY_MONTHLY]: COMPARISON_MODES.LOTTERY_PERIOD_COMPARISON,
 }
 
 export const DEFAULT_METRICS_BY_REPORT_TYPE = {
   [REPORT_TYPES.MONTHLY]: ['netSales'],
   [REPORT_TYPES.DAILY]: ['groceryTotal'],
+  [REPORT_TYPES.GAS_MONTHLY]: ['NET_PROFIT'],
+  [REPORT_TYPES.LOTTERY_MONTHLY]: ['ONLINE_SALES'],
 }
 
 export const buildDefaultFilters = () => {

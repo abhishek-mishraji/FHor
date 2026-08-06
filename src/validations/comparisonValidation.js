@@ -117,6 +117,36 @@ export const validateComparisonForm = (values) => {
       }
       break
 
+    case COMPARISON_MODES.GAS_PERIOD_COMPARISON:
+      if (!values.year) {
+        errors.year = 'Select comparison A year'
+      }
+      if (!values.month) {
+        errors.month = 'Select comparison A month'
+      }
+      if (!values.comparisonYear) {
+        errors.comparisonYear = 'Select comparison B year'
+      }
+      if (!values.comparisonMonth) {
+        errors.comparisonMonth = 'Select comparison B month'
+      }
+      break
+
+    case COMPARISON_MODES.LOTTERY_PERIOD_COMPARISON:
+      if (!values.year) {
+        errors.year = 'Select comparison A year'
+      }
+      if (!values.month) {
+        errors.month = 'Select comparison A month'
+      }
+      if (!values.comparisonYear) {
+        errors.comparisonYear = 'Select comparison B year'
+      }
+      if (!values.comparisonMonth) {
+        errors.comparisonMonth = 'Select comparison B month'
+      }
+      break
+
     default:
       errors.mode = 'Select a comparison type'
   }

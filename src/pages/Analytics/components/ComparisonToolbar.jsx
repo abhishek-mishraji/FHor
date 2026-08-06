@@ -13,7 +13,6 @@ import {
   getMonthOptions,
   getYearOptions,
 } from "../../../utils/dateUtils";
-import AggregationSelector from "./AggregationSelector";
 import ComparisonTypeSelector from "./ComparisonTypeSelector";
 import MetricSelector from "./MetricSelector";
 

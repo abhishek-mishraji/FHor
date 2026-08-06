@@ -68,7 +68,9 @@ const loadSavedViews = () => {
 const persistViews = (views) => {
   try {
     localStorage.setItem(SAVED_VIEWS_KEY, JSON.stringify(views));
-  } catch {}
+  } catch {
+    /* Ignore storage errors. */
+  }
 };
 
 // ── Statics ────────────────────────────────────────────────────────────────

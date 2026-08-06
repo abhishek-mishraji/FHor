@@ -33,7 +33,6 @@ import ColumnSelector from "./components/ColumnSelector";
 import ComparisonTable from "./components/ComparisonTable";
 import ComparisonToolbar from "./components/ComparisonToolbar";
 import ExportActions from "./components/ExportActions";
-import SummaryTable from "./components/SummaryTable";
 import { useComparisonQuery } from "./hooks/useComparisonQuery";
 
 const NUMERIC_FIELDS = new Set([
@@ -156,7 +155,9 @@ const AnalyticsPage = () => {
     async ({ signal }) => {
       if (
         !effectiveFilters.storeId ||
-        effectiveFilters.reportType === REPORT_TYPES.DAILY
+        ![REPORT_TYPES.MONTHLY, REPORT_TYPES.LOTTERY_MONTHLY].includes(
+          effectiveFilters.reportType,
+        )
       ) {
         return [];
       }
@@ -377,7 +378,11 @@ const AnalyticsPage = () => {
       const exportTitle =
         lastRun?.reportType === REPORT_TYPES.DAILY
           ? "Daily Merchandise Comparison"
-          : "Monthly Merchandise Comparison";
+          : lastRun?.reportType === REPORT_TYPES.GAS_MONTHLY
+            ? "Gas Sales Comparison"
+            : lastRun?.reportType === REPORT_TYPES.LOTTERY_MONTHLY
+              ? "Lottery Sales Comparison"
+              : "Monthly Merchandise Comparison";
 
       if (format === "csv") {
         exportCsv(matrix, filename);

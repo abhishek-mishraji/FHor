@@ -3,6 +3,7 @@ import {
   ALL_METRIC_KEYS,
   COMPARISON_MODES,
   METRIC_LABELS,
+  REPORT_TYPES,
 } from '../constants/comparisonConstants'
 import {
   computeDifference,
@@ -28,7 +29,7 @@ const toNumber = (value) => {
 // allowed stores from the JWT server-side, so a client's storeIds can only
 // narrow within their own stores.
 const buildParams = (values, isAdmin, metrics, extra = {}, { includeDepartment = true } = {}) => ({
-  reportType: 'MONTHLY',
+  reportType: values.reportType || REPORT_TYPES.MONTHLY,
   aggregate: values.aggregate || 'SUM',
   metric: metrics,
   ...(values.storeId ? { storeIds: [values.storeId] } : {}),
@@ -87,6 +88,128 @@ const metricColumnGroups = (metrics) =>
     kind: 'delta',
     metric,
   }))
+
+const composeGasPeriodComparison = async (values, fetcher) => {
+  const response = await fetcher({
+    reportType: REPORT_TYPES.GAS_MONTHLY,
+    groupBy: 'MONTH',
+    aggregate: values.aggregate || 'SUM',
+    metric: 'ALL',
+    storeIds: [values.storeId],
+    comparisonAMonth: Number(values.month),
+    comparisonAYear: Number(values.year),
+    comparisonBMonth: Number(values.comparisonMonth),
+    comparisonBYear: Number(values.comparisonYear),
+  })
+
+  const comparisonALabel = formatMonthTitle(values.month, values.year)
+  const comparisonBLabel = formatMonthTitle(
+    values.comparisonMonth,
+    values.comparisonYear,
+  )
+
+  const datasets = response?.datasets || []
+
+  // Define a curated sort order for report-level summary metrics at the bottom.
+  // Detail volume metrics (e.g. DETAIL_VOLUME_SOLD_1) will be grouped at the top.
+  const summaryOrder = [
+    'TOTAL_VOLUME_SOLD',
+    'NET_PROFIT',
+    'NET_PROFIT_PER_GALLON',
+    'CREDIT_FEES'
+  ]
+
+  const sortedDatasets = [...datasets].sort((a, b) => {
+    const aIsSummary = summaryOrder.includes(a.metric)
+    const bIsSummary = summaryOrder.includes(b.metric)
+
+    if (aIsSummary && !bIsSummary) return 1
+    if (!aIsSummary && bIsSummary) return -1
+    if (aIsSummary && bIsSummary) {
+      return summaryOrder.indexOf(a.metric) - summaryOrder.indexOf(b.metric)
+    }
+    // Maintain relative order for detail metrics
+    return 0
+  })
+
+  return {
+    mode: values.mode,
+    rowDimension: 'Metric',
+    columnGroups: [{ key: 'value', label: 'Value', kind: 'delta' }],
+    currentHeader: comparisonBLabel,
+    previousHeader: comparisonALabel,
+    summaryEnabled: false,
+    title: `Gas Sales — ${comparisonALabel} vs ${comparisonBLabel}`,
+    rows: sortedDatasets.map((dataset) => {
+      const metric = dataset.metric
+      const current = toNumber(dataset.valueB ?? dataset.data?.[1])
+      const previous = toNumber(dataset.valueA ?? dataset.data?.[0])
+      const difference = toNumber(dataset.difference) ?? computeDifference(current, previous)
+      const pctDifference =
+        toNumber(dataset.percentageDifference) ?? computePctDifference(current, previous)
+
+      return {
+        id: metric,
+        label: dataset.label || METRIC_LABELS[metric] || metric,
+        previousRef: comparisonALabel,
+        toneMetric: metric,
+        cells: {
+          value: { current, previous, difference, pctDifference },
+        },
+      }
+    }),
+  }
+}
+
+const composeLotteryPeriodComparison = async (values, fetcher) => {
+  const response = await fetcher({
+    reportType: REPORT_TYPES.LOTTERY_MONTHLY,
+    groupBy: 'MONTH',
+    aggregate: values.aggregate || 'SUM',
+    metric: 'ALL',
+    storeIds: [values.storeId],
+    comparisonAMonth: Number(values.month),
+    comparisonAYear: Number(values.year),
+    comparisonBMonth: Number(values.comparisonMonth),
+    comparisonBYear: Number(values.comparisonYear),
+  })
+
+  const comparisonALabel = formatMonthTitle(values.month, values.year)
+  const comparisonBLabel = formatMonthTitle(
+    values.comparisonMonth,
+    values.comparisonYear,
+  )
+
+  const datasets = response?.datasets || []
+
+  return {
+    mode: values.mode,
+    rowDimension: 'Metric',
+    columnGroups: [{ key: 'value', label: 'Value', kind: 'delta' }],
+    currentHeader: comparisonBLabel,
+    previousHeader: comparisonALabel,
+    summaryEnabled: false,
+    title: `Lottery Sales — ${comparisonALabel} vs ${comparisonBLabel}`,
+    rows: datasets.map((dataset) => {
+      const metric = dataset.metric
+      const current = toNumber(dataset.valueB ?? dataset.data?.[1])
+      const previous = toNumber(dataset.valueA ?? dataset.data?.[0])
+      const difference = toNumber(dataset.difference) ?? computeDifference(current, previous)
+      const pctDifference =
+        toNumber(dataset.percentageDifference) ?? computePctDifference(current, previous)
+
+      return {
+        id: metric,
+        label: dataset.label || METRIC_LABELS[metric] || metric,
+        previousRef: comparisonALabel,
+        toneMetric: metric,
+        cells: {
+          value: { current, previous, difference, pctDifference },
+        },
+      }
+    }),
+  }
+}
 
 const composeMonthOverMonth = async (values, fetcher, isAdmin) => {
   const metrics = values.metrics
@@ -553,6 +676,8 @@ const COMPOSERS = {
   [COMPARISON_MODES.ONE_DAY_VS_RANGE]: composeOneDayVsRange,
   [COMPARISON_MODES.SELECTED_DAYS]: composeSelectedDays,
   [COMPARISON_MODES.DAILY_METRIC]: composeDailyMetricComparison,
+  [COMPARISON_MODES.GAS_PERIOD_COMPARISON]: composeGasPeriodComparison,
+  [COMPARISON_MODES.LOTTERY_PERIOD_COMPARISON]: composeLotteryPeriodComparison,
 }
 
 export const composeComparison = async (values, fetcher, isAdmin, options = {}) => {
