@@ -3,12 +3,15 @@ import { validateMonthlyReportForm } from './reportValidation'
 export const validateGasForm = (values) => {
   const errors = validateMonthlyReportForm(values)
 
-  const numericFields = ['creditFees', 'totalVolumeSold', 'netProfit', 'netProfitPerGallon']
+  const nonNegativeFields = ['creditFees', 'totalVolumeSold']
+  const signedFields = ['netProfit', 'netProfitPerGallon']
+  const numericFields = [...nonNegativeFields, ...signedFields]
 
   numericFields.forEach((key) => {
     const val = values[key]
+    const isNegative = nonNegativeFields.includes(key) && Number(val) < 0
 
-    if (val !== '' && val !== null && val !== undefined && (Number.isNaN(Number(val)) || Number(val) < 0)) {
+    if (val !== '' && val !== null && val !== undefined && (Number.isNaN(Number(val)) || isNegative)) {
       errors[key] = `${key} must be a valid number.`
     }
   })

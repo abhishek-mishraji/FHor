@@ -1,6 +1,6 @@
 const environment = {
-  apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
-  // apiBaseUrl:  'http://localhost:8080',
+  // apiBaseUrl: import.meta.env.VITE_API_BASE_URL,
+  apiBaseUrl: 'http://localhost:8080',
   apiVersion: '/api/v1',
   requestTimeout: Number(import.meta.env.VITE_API_TIMEOUT || 20000),
   defaultPageSize: Number(import.meta.env.VITE_DEFAULT_PAGE_SIZE || 10),
